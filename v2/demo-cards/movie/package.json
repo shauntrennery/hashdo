@@ -1,0 +1,15 @@
+{
+  "name": "@hashdo/card-movie",
+  "version": "1.0.0",
+  "description": "Look up any movie — poster, ratings, cast, plot, and watchlist",
+  "type": "module",
+  "main": "card.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@hashdo/core": "*"
+  },
+  "license": "MIT"
+}
