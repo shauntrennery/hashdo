@@ -1,4 +1,4 @@
-import { defineCard } from '@hashdo/core';
+import { defineCard, colors, gradients } from '@hashdo/core';
 
 /**
  * #do/repo — GitHub repository profile card.
@@ -174,7 +174,7 @@ export default defineCard({
 
     const topicPills = topics.length > 0
       ? `<div style="padding:0 24px 16px; display:flex; gap:6px; flex-wrap:wrap;">
-          ${topics.map((t: string) => `<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; background:#f0f4ff; color:#4f46e5; border:1px solid #e0e7ff;">${t}</span>`).join('')}
+          ${topics.map((t: string) => `<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; background:${colors.purple[50]}; color:${colors.purple[800]}; border:1px solid ${colors.purple[100]};">${t}</span>`).join('')}
         </div>`
       : '';
 
@@ -210,17 +210,17 @@ export default defineCard({
 
         <!-- Stats row -->
         <div style="padding:4px 24px 16px; display:flex; gap:10px;">
-          <div style="flex:1; background:#fefce8; border-radius:12px; padding:10px 12px; text-align:center;">
-            <div style="font-size:18px; font-weight:700; color:#ca8a04;">${vm.stars}</div>
-            <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#a16207; margin-top:2px;">Stars</div>
+          <div style="flex:1; background:${colors.amber[50]}; border-radius:12px; padding:10px 12px; text-align:center;">
+            <div style="font-size:18px; font-weight:700; color:${colors.amber[800]};">${vm.stars}</div>
+            <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:${colors.amber[600]}; margin-top:2px;">Stars</div>
           </div>
-          <div style="flex:1; background:#f0fdf4; border-radius:12px; padding:10px 12px; text-align:center;">
-            <div style="font-size:18px; font-weight:700; color:#16a34a;">${vm.forks}</div>
-            <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#15803d; margin-top:2px;">Forks</div>
+          <div style="flex:1; background:${colors.green[50]}; border-radius:12px; padding:10px 12px; text-align:center;">
+            <div style="font-size:18px; font-weight:700; color:${colors.green[800]};">${vm.forks}</div>
+            <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:${colors.green[600]}; margin-top:2px;">Forks</div>
           </div>
-          <div style="flex:1; background:#fef2f2; border-radius:12px; padding:10px 12px; text-align:center;">
-            <div style="font-size:18px; font-weight:700; color:#dc2626;">${vm.openIssues}</div>
-            <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#b91c1c; margin-top:2px;">Issues</div>
+          <div style="flex:1; background:${colors.red[50]}; border-radius:12px; padding:10px 12px; text-align:center;">
+            <div style="font-size:18px; font-weight:700; color:${colors.red[800]};">${vm.openIssues}</div>
+            <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:${colors.red[600]}; margin-top:2px;">Issues</div>
           </div>
         </div>
 
@@ -385,11 +385,12 @@ function timeAgo(iso: string): string {
   }
 }
 
-/** GitHub-style language color */
+/** GitHub-style language color — uses well-known GitHub language colors with palette fallback */
 function languageColor(lang: string | null): string {
-  if (!lang) return 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+  if (!lang) return gradients.purple;
 
-  const colors: Record<string, string> = {
+  // GitHub's canonical language colors (these are widely recognized by developers)
+  const langColors: Record<string, string> = {
     'JavaScript': '#f1e05a',
     'TypeScript': '#3178c6',
     'Python': '#3572A5',
@@ -412,7 +413,7 @@ function languageColor(lang: string | null): string {
     'Svelte': '#ff3e00',
   };
 
-  const solid = colors[lang];
+  const solid = langColors[lang];
   if (solid) return `linear-gradient(135deg, ${solid} 0%, ${solid}dd 100%)`;
-  return 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+  return gradients.purple;
 }

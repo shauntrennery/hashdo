@@ -1,4 +1,4 @@
-import { defineCard } from '@hashdo/core';
+import { defineCard, categoricalColors, gradients } from '@hashdo/core';
 
 export default defineCard({
   name: 'do-poll',
@@ -93,11 +93,6 @@ export default defineCard({
     const voterCount = (state.voterCount as number) ?? 0;
 
     // Build per-option view data
-    const colors = [
-      '#6366f1', '#f59e0b', '#10b981', '#ef4444',
-      '#8b5cf6', '#ec4899', '#14b8a6', '#f97316',
-    ];
-
     const optionData = optionNames.map((name, i) => {
       const count = votes[name] ?? 0;
       const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
@@ -105,7 +100,7 @@ export default defineCard({
         name,
         count,
         pct,
-        color: colors[i % colors.length],
+        color: categoricalColors[i % categoricalColors.length],
       };
     });
 
@@ -281,7 +276,7 @@ export default defineCard({
     <div class="poll-card" data-closed="${closed}" data-poll-id="${pollId}" data-api="${vm.apiBaseUrl as string}" data-voter-count="${vm.voterCount as number}">
       <style>
         .poll-card{font-family:'SF Pro Display',system-ui,-apple-system,sans-serif;max-width:400px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-        .poll-header{padding:24px 24px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+        .poll-header{padding:24px 24px 20px;background:${gradients.purple};color:#fff}
         .poll-id{display:inline-block;font-family:'SF Mono',monospace;font-size:11px;font-weight:500;background:rgba(255,255,255,.2);padding:3px 8px;border-radius:6px;letter-spacing:.04em}
         .poll-option{border:2px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
         .poll-option:hover{transform:translateX(2px)}

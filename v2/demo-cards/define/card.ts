@@ -1,4 +1,4 @@
-import { defineCard } from '@hashdo/core';
+import { defineCard, colors } from '@hashdo/core';
 
 /**
  * #do/define — Dictionary word lookup card.
@@ -181,11 +181,11 @@ export default defineCard({
       ).join('');
 
       const synRow = m.synonyms.length > 0
-        ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${m.synonyms.map((s: string) => `<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;">${s}</span>`).join('')}</div>`
+        ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${m.synonyms.map((s: string) => `<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:${colors.green[50]}; color:${colors.green[800]}; border:1px solid ${colors.green[100]};">${s}</span>`).join('')}</div>`
         : '';
 
       const antRow = m.antonyms.length > 0
-        ? `<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">${m.antonyms.map((a: string) => `<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:#fef2f2; color:#dc2626; border:1px solid #fecaca;">${a}</span>`).join('')}</div>`
+        ? `<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">${m.antonyms.map((a: string) => `<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:${colors.red[50]}; color:${colors.red[800]}; border:1px solid ${colors.red[100]};">${a}</span>`).join('')}</div>`
         : '';
 
       return `
@@ -328,14 +328,14 @@ async function lookupWord(word: string): Promise<DictionaryEntry | null> {
 /** Get accent color for a part of speech */
 function posColor(pos: string): string {
   switch (pos.toLowerCase()) {
-    case 'noun': return '#2563eb';
-    case 'verb': return '#dc2626';
-    case 'adjective': return '#7c3aed';
-    case 'adverb': return '#0891b2';
-    case 'pronoun': return '#059669';
-    case 'preposition': return '#d97706';
-    case 'conjunction': return '#be185d';
-    case 'interjection': return '#ea580c';
-    default: return '#6366f1';
+    case 'noun': return colors.blue[600];
+    case 'verb': return colors.red[600];
+    case 'adjective': return colors.purple[600];
+    case 'adverb': return colors.teal[600];
+    case 'pronoun': return colors.green[600];
+    case 'preposition': return colors.amber[600];
+    case 'conjunction': return colors.pink[600];
+    case 'interjection': return colors.coral[600];
+    default: return colors.purple[600];
   }
 }

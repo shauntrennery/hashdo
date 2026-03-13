@@ -1,4 +1,4 @@
-import { defineCard, galleryHtml } from '@hashdo/core';
+import { defineCard, galleryHtml, gradients } from '@hashdo/core';
 import type { GalleryImage } from '@hashdo/core';
 
 /**
@@ -379,33 +379,21 @@ async function searchBooks(query: string, limit: number): Promise<BookResult[]> 
   }
 }
 
-/** Pick an accent color based on the first subject keyword */
+/** Pick an accent gradient based on the first subject keyword */
 function pickAccentColor(subject: string): string {
   const s = subject.toLowerCase();
 
-  if (s.includes('fiction') || s.includes('novel'))
-    return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-  if (s.includes('science') || s.includes('physics') || s.includes('math'))
-    return 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)';
-  if (s.includes('history') || s.includes('war'))
-    return 'linear-gradient(135deg, #92400e 0%, #b45309 100%)';
-  if (s.includes('fantasy') || s.includes('magic'))
-    return 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)';
-  if (s.includes('romance') || s.includes('love'))
-    return 'linear-gradient(135deg, #e11d48 0%, #f43f5e 100%)';
-  if (s.includes('horror') || s.includes('thriller') || s.includes('mystery'))
-    return 'linear-gradient(135deg, #1f2937 0%, #4b5563 100%)';
-  if (s.includes('biography') || s.includes('memoir'))
-    return 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)';
-  if (s.includes('children') || s.includes('juvenile'))
-    return 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)';
-  if (s.includes('philosophy') || s.includes('religion'))
-    return 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
-  if (s.includes('art') || s.includes('music') || s.includes('poetry'))
-    return 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)';
-  if (s.includes('business') || s.includes('economics'))
-    return 'linear-gradient(135deg, #059669 0%, #10b981 100%)';
+  if (s.includes('fiction') || s.includes('novel')) return gradients.purple;
+  if (s.includes('science') || s.includes('physics') || s.includes('math')) return gradients.blue;
+  if (s.includes('history') || s.includes('war')) return gradients.amber;
+  if (s.includes('fantasy') || s.includes('magic')) return gradients.purple;
+  if (s.includes('romance') || s.includes('love')) return gradients.pink;
+  if (s.includes('horror') || s.includes('thriller') || s.includes('mystery')) return gradients.gray;
+  if (s.includes('biography') || s.includes('memoir')) return gradients.teal;
+  if (s.includes('children') || s.includes('juvenile')) return gradients.amber;
+  if (s.includes('philosophy') || s.includes('religion')) return gradients.purple;
+  if (s.includes('art') || s.includes('music') || s.includes('poetry')) return gradients.pink;
+  if (s.includes('business') || s.includes('economics')) return gradients.green;
 
-  // Default warm gradient
-  return 'linear-gradient(135deg, #f97316 0%, #ef4444 100%)';
+  return gradients.coral;
 }

@@ -1,4 +1,4 @@
-import { defineCard } from '@hashdo/core';
+import { defineCard, colors } from '@hashdo/core';
 
 const marketStateLabels: Record<string, string> = {
   REGULAR: 'Market Open',
@@ -81,7 +81,7 @@ export default defineCard({
         changePercent: changePercent.toFixed(2),
         isPositive: change >= 0,
         arrow: change >= 0 ? '▲' : '▼',
-        color: change >= 0 ? '#22c55e' : '#ef4444',
+        color: change >= 0 ? colors.positive : colors.negative,
         marketLabel: marketStateLabels[quote.marketState as string] ?? 'Market Closed',
         lookupCount: history.length,
       },
@@ -153,12 +153,12 @@ export default defineCard({
     <div style="font-family:'SF Pro Display',system-ui,-apple-system,sans-serif; max-width:340px; background:#fff; border-radius:16px; overflow:hidden;">
       <div style="padding:20px 24px 16px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
-          <div style="width:40px; height:40px; border-radius:10px; background:${vm.isPositive ? '#f0fdf4' : '#fef2f2'}; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:${vm.color};">${(vm.symbol as string).charAt(0)}</div>
+          <div style="width:40px; height:40px; border-radius:10px; background:${vm.isPositive ? colors.green[50] : colors.red[50]}; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:${vm.color};">${(vm.symbol as string).charAt(0)}</div>
           <div>
             <div style="font-size:16px; font-weight:700; color:#111; letter-spacing:-0.01em;">${vm.symbol}</div>
             <div style="font-size:12px; color:#999; font-weight:400;">${vm.name}</div>
           </div>
-          <div style="margin-left:auto; padding:4px 10px; border-radius:20px; background:${vm.isPositive ? '#f0fdf4' : '#fef2f2'}; color:${vm.color}; font-size:12px; font-weight:600;">${vm.arrow} ${vm.changePercent}%</div>
+          <div style="margin-left:auto; padding:4px 10px; border-radius:20px; background:${vm.isPositive ? colors.green[50] : colors.red[50]}; color:${vm.color}; font-size:12px; font-weight:600;">${vm.arrow} ${vm.changePercent}%</div>
         </div>
         <div style="margin-bottom:4px;">
           <span style="font-size:36px; font-weight:700; color:#111; letter-spacing:-0.02em;">${typeof vm.price === 'number' ? (vm.price as number).toFixed(2) : vm.price}</span>

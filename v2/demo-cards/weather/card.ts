@@ -1,4 +1,4 @@
-import { defineCard } from '@hashdo/core';
+import { defineCard, gradients } from '@hashdo/core';
 
 /**
  * #do/weather — Current weather conditions.
@@ -197,7 +197,7 @@ export default defineCard({
 
   template: (vm) => `
     <div style="font-family:system-ui,sans-serif; padding:20px; max-width:320px;
-                background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+                background:${gradients.purple};
                 border-radius:12px; color:white;">
       <div style="font-size:14px; opacity:0.9; margin-bottom:4px;">
         ${vm.locationName}
