@@ -228,12 +228,14 @@ export default defineCard({
       <!-- Rating row -->
       <div style="display:flex; gap:1px; background:#f3f4f6;">
         ${vm.rating ? `
-        <div style="flex:1; background:#fff; padding:12px 8px; text-align:center;">
-          <div style="font-size:18px; font-weight:700; color:${colors.amber[600]};">${vm.rating}</div>
-          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-top:2px;">TMDB</div>
+        <div style="flex:1; background:#fff; padding:12px 16px; text-align:left;">
+          <div style="display:flex; align-items:baseline; gap:6px;">
+            <div style="font-size:18px; font-weight:700; color:${colors.amber[600]};">${vm.rating}</div>
+            <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">TMDB</div>
+          </div>
         </div>
         ` : `
-        <div style="flex:1; background:#fff; padding:12px 8px; text-align:center;">
+        <div style="flex:1; background:#fff; padding:12px 16px; text-align:left;">
           <div style="font-size:14px; color:#9ca3af;">No rating available</div>
         </div>
         `}
