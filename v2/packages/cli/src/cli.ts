@@ -1045,6 +1045,7 @@ function renderIndex(cards: CardDefinition[]): string {
     'do-game-snake':  { icon: '\uD83D\uDC0D', color: '#4ade80', glow: 'rgba(74,222,128,0.15)', tag: '#do/game/snake' },
     'do-game-wordle': { icon: '\uD83D\uDFE9', color: '#538d4e', glow: 'rgba(83,141,78,0.15)', tag: '#do/game/wordle' },
     'do-game-zen-garden': { icon: '\uD83E\uDEA8', color: '#8B7355', glow: 'rgba(139,115,85,0.15)', tag: '#do/game/zen-garden' },
+    'do-movie':       { icon: '\uD83C\uDFAC', color: '#E04545', glow: 'rgba(224,69,69,0.15)' },
   };
   const fallbackMeta = { icon: '\u26A1', color: '#6b6b80', glow: 'rgba(107,107,128,0.15)' };
 
