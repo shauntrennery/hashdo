@@ -217,7 +217,7 @@ export default defineCard({
       <!-- Plot -->
       <div style="padding:0 24px 16px;">
         <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-bottom:4px;">Plot</div>
-        <div style="font-size:13px; color:#4b5563; line-height:1.5;">${vm.plot.length > 300 ? vm.plot.slice(0, 297) + '...' : vm.plot}</div>
+        <div style="font-size:13px; color:#4b5563; line-height:1.5;">${(vm.plot as string).length > 300 ? (vm.plot as string).slice(0, 297) + '...' : vm.plot}</div>
       </div>
 
       <!-- Footer -->
