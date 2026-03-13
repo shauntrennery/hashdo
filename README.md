@@ -14,6 +14,7 @@ HashDo turns live data into rich, interactive cards that work inside AI conversa
 | `#do/qr` | do-qr | Generate a QR code from text or a URL |
 | `#do/city` | do-city | City explorer — weather, local time, population, currency, and languages |
 | `#do/poll` | do-poll | Interactive poll with live voting, percentages, and results |
+| `#do/movie` | do-movie | Movie lookup with poster, ratings, cast, plot, and watchlist |
 
 ## Quick Start
 

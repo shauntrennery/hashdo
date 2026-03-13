@@ -36,6 +36,7 @@ import cityExplorerCard from './demo-cards/city-explorer/card.js';
 import pollCard from './demo-cards/poll/card.js';
 import qrCodeCard from './demo-cards/qr-code/card.js';
 import stockQuoteCard from './demo-cards/stock-quote/card.js';
+import movieCard from './demo-cards/movie/card.js';
 import weatherCard from './demo-cards/weather/card.js';
 
 import { fileURLToPath } from 'node:url';
@@ -47,13 +48,14 @@ async function main() {
   await serveMcp({
     name: 'hashdo',
     version: '2.0.0-alpha.1',
-    cards: [weatherCard, stockQuoteCard, qrCodeCard, cityExplorerCard, pollCard],
+    cards: [weatherCard, stockQuoteCard, qrCodeCard, cityExplorerCard, pollCard, movieCard],
     cardDirs: {
       'do-weather': join(__dirname, 'demo-cards/weather'),
       'do-stock': join(__dirname, 'demo-cards/stock-quote'),
       'do-qr': join(__dirname, 'demo-cards/qr-code'),
       'do-city': join(__dirname, 'demo-cards/city-explorer'),
       'do-poll': join(__dirname, 'demo-cards/poll'),
+      'do-movie': join(__dirname, 'demo-cards/movie'),
     },
   });
 }
