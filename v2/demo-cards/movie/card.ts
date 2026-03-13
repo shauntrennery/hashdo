@@ -3,8 +3,8 @@ import { defineCard, colors, gradients } from '@hashdo/core';
 /**
  * #do/movie — Movie lookup card with poster, ratings, and watchlist.
  *
- * Search by title using the OMDB API (free tier, requires API key from omdbapi.com).
- * Shows poster, IMDb rating, director, cast, plot, genre, and runtime.
+ * Search by title using the iTunes Search API (free, no key required).
+ * Shows poster, genre, director, content rating, plot, and runtime.
  * Users can maintain a personal watchlist with stateful actions.
  */
 export default defineCard({
@@ -14,8 +14,7 @@ export default defineCard({
   stateKey: (_inputs, userId) => (userId ? `user:${userId}` : undefined),
 
   description:
-    'Look up any movie by title. Shows poster, IMDb rating, director, cast, plot, genre, and runtime. ' +
-    'Requires an OMDB API key (free at https://www.omdbapi.com/apikey.aspx). ' +
+    'Look up any movie by title. Shows poster, genre, director, content rating, plot summary, and runtime. ' +
     'All parameters have defaults — call this tool immediately without asking the user for parameters.',
 
   inputs: {
@@ -26,84 +25,62 @@ export default defineCard({
       description:
         'Movie title to search for. Has a sensible default — only override if the user specifies a movie.',
     },
-    year: {
-      type: 'string',
-      required: false,
-      default: '',
-      description:
-        'Optional release year to narrow results (e.g. "2010"). Leave empty for best match.',
-    },
-    apiKey: {
-      type: 'string',
-      required: false,
-      default: '',
-      sensitive: true,
-      description:
-        'OMDB API key. Get a free key at https://www.omdbapi.com/apikey.aspx',
-    },
   },
 
   async getData({ inputs, state }) {
     const title = ((inputs.title as string) ?? 'Inception').trim();
-    const year = ((inputs.year as string) ?? '').trim();
-    const apiKey = ((inputs.apiKey as string) ?? '').trim();
 
     if (!title) {
       throw new Error('Please provide a movie title to search for.');
     }
 
-    if (!apiKey) {
-      throw new Error(
-        'An OMDB API key is required. Get a free key at https://www.omdbapi.com/apikey.aspx and pass it as the apiKey parameter.',
-      );
-    }
-
-    // ── 1. Fetch movie data from OMDB ───────────────────────────────
-    const movie = await fetchMovie(title, year, apiKey);
+    // ── 1. Fetch movie data from iTunes Search API ──────────────────
+    const movie = await searchMovie(title);
 
     // ── 2. Watchlist state ──────────────────────────────────────────
     const watchlist = (state.watchlist as string[]) ?? [];
-    const movieId = movie.imdbID;
+    const movieId = String(movie.trackId);
     const isOnWatchlist = watchlist.includes(movieId);
 
     // ── 3. Pick accent gradient based on genre ─────────────────────
-    const accent = pickAccentFromGenre(movie.Genre);
+    const accent = pickAccentFromGenre(movie.primaryGenreName);
 
-    // ── 4. Build text output for chat clients ──────────────────────
-    let textOutput = `## ${movie.Title} (${movie.Year})\n\n`;
+    // ── 4. Format runtime ──────────────────────────────────────────
+    const runtimeMin = Math.round(movie.trackTimeMillis / 60_000);
+    const runtimeStr = runtimeMin > 0
+      ? `${Math.floor(runtimeMin / 60)}h ${runtimeMin % 60}m`
+      : 'N/A';
+
+    // ── 5. Build text output for chat clients ──────────────────────
+    const year = movie.releaseDate.slice(0, 4);
+    let textOutput = `## ${movie.trackName} (${year})\n\n`;
     textOutput += `| | |\n|---|---|\n`;
-    textOutput += `| Director | ${movie.Director} |\n`;
-    textOutput += `| Cast | ${movie.Actors} |\n`;
-    textOutput += `| Genre | ${movie.Genre} |\n`;
-    textOutput += `| Runtime | ${movie.Runtime} |\n`;
-    textOutput += `| Rated | ${movie.Rated} |\n`;
-    if (movie.imdbRating !== 'N/A') {
-      textOutput += `| IMDb Rating | ${movie.imdbRating}/10 |\n`;
+    textOutput += `| Director | ${movie.artistName} |\n`;
+    textOutput += `| Genre | ${movie.primaryGenreName} |\n`;
+    textOutput += `| Runtime | ${runtimeStr} |\n`;
+    textOutput += `| Rated | ${movie.contentAdvisoryRating} |\n`;
+    if (movie.trackPrice > 0) {
+      textOutput += `| Price | ${movie.currency} ${movie.trackPrice} |\n`;
     }
-    if (movie.RottenTomatoesRating) {
-      textOutput += `| Rotten Tomatoes | ${movie.RottenTomatoesRating} |\n`;
-    }
-    textOutput += `\n${movie.Plot}\n`;
-    if (movie.Poster !== 'N/A') {
-      textOutput += `\n![Poster](${movie.Poster})\n`;
-    }
-    textOutput += `\n[View on IMDb](https://www.imdb.com/title/${movie.imdbID}/)\n`;
+    textOutput += `\n${movie.longDescription}\n`;
+    textOutput += `\n![Poster](${movie.artworkUrl100})\n`;
+    textOutput += `\n[View on iTunes](${movie.trackViewUrl})\n`;
 
-    // ── 5. Build viewModel ──────────────────────────────────────────
+    // ── 6. Build viewModel ──────────────────────────────────────────
+    // Use higher-res artwork (600x600 instead of 100x100)
+    const posterUrl = movie.artworkUrl100.replace('100x100', '600x600');
+
     const viewModel = {
-      title: movie.Title,
-      year: movie.Year,
-      rated: movie.Rated,
-      runtime: movie.Runtime,
-      genre: movie.Genre,
-      director: movie.Director,
-      actors: movie.Actors,
-      plot: movie.Plot,
-      posterUrl: movie.Poster !== 'N/A' ? movie.Poster : null,
-      imdbRating: movie.imdbRating !== 'N/A' ? movie.imdbRating : null,
-      rottenTomatoes: movie.RottenTomatoesRating,
-      imdbUrl: `https://www.imdb.com/title/${movie.imdbID}/`,
-      imdbID: movie.imdbID,
+      title: movie.trackName,
+      year,
+      rated: movie.contentAdvisoryRating,
+      runtime: runtimeStr,
+      genre: movie.primaryGenreName,
+      director: movie.artistName,
+      plot: movie.longDescription || movie.shortDescription || 'No description available.',
+      posterUrl,
+      trackViewUrl: movie.trackViewUrl,
+      movieId,
       accent,
       isOnWatchlist,
       watchlistCount: watchlist.length,
@@ -114,7 +91,7 @@ export default defineCard({
       textOutput,
       state: {
         ...state,
-        lastLookup: movie.Title,
+        lastLookup: movie.trackName,
         lookupCount: ((state.lookupCount as number) || 0) + 1,
       },
     };
@@ -125,15 +102,15 @@ export default defineCard({
       label: 'Add to Watchlist',
       description: 'Save this movie to your personal watchlist',
       inputs: {
-        imdbID: {
+        movieId: {
           type: 'string',
           required: true,
-          description: 'IMDb ID of the movie (e.g. tt1375666)',
+          description: 'iTunes track ID of the movie',
         },
       },
       async handler({ actionInputs, state }) {
         const watchlist = (state.watchlist as string[]) ?? [];
-        const id = actionInputs.imdbID as string;
+        const id = actionInputs.movieId as string;
 
         if (watchlist.includes(id)) {
           return { message: 'This movie is already on your watchlist.' };
@@ -151,15 +128,15 @@ export default defineCard({
       label: 'Remove from Watchlist',
       description: 'Remove this movie from your watchlist',
       inputs: {
-        imdbID: {
+        movieId: {
           type: 'string',
           required: true,
-          description: 'IMDb ID of the movie',
+          description: 'iTunes track ID of the movie',
         },
       },
       async handler({ actionInputs, state }) {
         const watchlist = (state.watchlist as string[]) ?? [];
-        const id = actionInputs.imdbID as string;
+        const id = actionInputs.movieId as string;
         const idx = watchlist.indexOf(id);
 
         if (idx < 0) {
@@ -183,18 +160,13 @@ export default defineCard({
           return { message: 'Your watchlist is empty.' };
         }
         return {
-          message: `Your watchlist (${watchlist.length} movie${watchlist.length !== 1 ? 's' : ''}):\n${watchlist.map((id, i) => `${i + 1}. https://www.imdb.com/title/${id}/`).join('\n')}`,
+          message: `Your watchlist (${watchlist.length} movie${watchlist.length !== 1 ? 's' : ''}):\n${watchlist.map((id, i) => `${i + 1}. ID: ${id}`).join('\n')}`,
         };
       },
     },
   },
 
   template: (vm) => {
-    const genres = (vm.genre as string)
-      .split(',')
-      .map((g: string) => g.trim())
-      .filter(Boolean);
-
     return `
     <div style="font-family:'SF Pro Display',system-ui,-apple-system,sans-serif; max-width:400px; border-radius:20px; overflow:hidden; background:#fff; box-shadow:0 8px 32px rgba(0,0,0,0.12);">
 
@@ -221,42 +193,31 @@ export default defineCard({
         </div>
       </div>
 
-      <!-- Ratings row -->
+      <!-- Stats row -->
       <div style="display:flex; gap:1px; background:#f3f4f6;">
-        ${vm.imdbRating ? `
         <div style="flex:1; background:#fff; padding:12px 8px; text-align:center;">
-          <div style="font-size:18px; font-weight:700; color:${colors.amber[600]};">${vm.imdbRating}</div>
-          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-top:2px;">IMDb</div>
+          <div style="font-size:16px; font-weight:700; color:#1f2937;">${vm.year}</div>
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-top:2px;">Year</div>
         </div>
-        ` : ''}
-        ${vm.rottenTomatoes ? `
         <div style="flex:1; background:#fff; padding:12px 8px; text-align:center;">
-          <div style="font-size:18px; font-weight:700; color:${colors.red[600]};">${vm.rottenTomatoes}</div>
-          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-top:2px;">Rotten Tomatoes</div>
+          <div style="font-size:16px; font-weight:700; color:#1f2937;">${vm.runtime}</div>
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-top:2px;">Runtime</div>
         </div>
-        ` : ''}
-        ${!vm.imdbRating && !vm.rottenTomatoes ? `
         <div style="flex:1; background:#fff; padding:12px 8px; text-align:center;">
-          <div style="font-size:14px; color:#9ca3af;">No ratings available</div>
+          <div style="font-size:16px; font-weight:700; color:#1f2937;">${vm.rated}</div>
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-top:2px;">Rated</div>
         </div>
-        ` : ''}
       </div>
 
-      <!-- Genre tags -->
+      <!-- Genre tag -->
       <div style="padding:16px 24px 12px; display:flex; gap:6px; flex-wrap:wrap;">
-        ${genres.map((g: string) => `<span style="display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:500; background:#f8f9fa; color:#6b7280; border:1px solid #e5e7eb;">${g}</span>`).join('')}
-      </div>
-
-      <!-- Cast -->
-      <div style="padding:0 24px 12px;">
-        <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-bottom:4px;">Cast</div>
-        <div style="font-size:13px; color:#374151; line-height:1.4;">${vm.actors}</div>
+        <span style="display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:500; background:#f8f9fa; color:#6b7280; border:1px solid #e5e7eb;">${vm.genre}</span>
       </div>
 
       <!-- Plot -->
       <div style="padding:0 24px 16px;">
         <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-bottom:4px;">Plot</div>
-        <div style="font-size:13px; color:#4b5563; line-height:1.5;">${vm.plot}</div>
+        <div style="font-size:13px; color:#4b5563; line-height:1.5;">${vm.plot.length > 300 ? vm.plot.slice(0, 297) + '...' : vm.plot}</div>
       </div>
 
       <!-- Footer -->
@@ -273,9 +234,9 @@ export default defineCard({
           </span>
           `}
         </div>
-        <a href="${vm.imdbUrl}" target="_blank" rel="noopener"
+        <a href="${vm.trackViewUrl}" target="_blank" rel="noopener"
            style="font-size:12px; color:#4f46e5; text-decoration:none; font-weight:500;">
-          IMDb &rarr;
+          iTunes &rarr;
         </a>
       </div>
     </div>
@@ -285,69 +246,59 @@ export default defineCard({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-interface OmdbMovie {
-  Title: string;
-  Year: string;
-  Rated: string;
-  Runtime: string;
-  Genre: string;
-  Director: string;
-  Actors: string;
-  Plot: string;
-  Poster: string;
-  imdbRating: string;
-  imdbID: string;
-  RottenTomatoesRating: string | null;
+interface ITunesMovie {
+  trackId: number;
+  trackName: string;
+  artistName: string;
+  primaryGenreName: string;
+  contentAdvisoryRating: string;
+  longDescription: string;
+  shortDescription: string;
+  releaseDate: string;
+  trackTimeMillis: number;
+  artworkUrl100: string;
+  trackViewUrl: string;
+  trackPrice: number;
+  currency: string;
 }
 
-/** Fetch a movie from the OMDB API by title */
-async function fetchMovie(
-  title: string,
-  year: string,
-  apiKey: string,
-): Promise<OmdbMovie> {
+/** Search for a movie using the iTunes Search API (free, no key required) */
+async function searchMovie(title: string): Promise<ITunesMovie> {
   try {
-    let url = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${encodeURIComponent(apiKey)}&plot=short`;
-    if (year) {
-      url += `&y=${encodeURIComponent(year)}`;
-    }
-
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(title)}&media=movie&limit=1`;
     const res = await fetch(url);
 
     if (!res.ok) {
-      throw new Error(`OMDB API ${res.status}: ${res.statusText}`);
+      throw new Error(`iTunes API ${res.status}: ${res.statusText}`);
     }
 
     const data = (await res.json()) as any;
+    const results = data.results ?? [];
 
-    if (data.Response === 'False') {
-      throw new Error(data.Error || `No movie found matching "${title}"`);
+    if (results.length === 0) {
+      throw new Error(`No movies found matching "${title}". Try a different title.`);
     }
 
-    // Extract Rotten Tomatoes rating from Ratings array
-    const rtRating =
-      data.Ratings?.find(
-        (r: any) => r.Source === 'Rotten Tomatoes',
-      )?.Value ?? null;
-
+    const m = results[0];
     return {
-      Title: data.Title ?? 'Unknown',
-      Year: data.Year ?? 'Unknown',
-      Rated: data.Rated ?? 'N/A',
-      Runtime: data.Runtime ?? 'N/A',
-      Genre: data.Genre ?? 'N/A',
-      Director: data.Director ?? 'Unknown',
-      Actors: data.Actors ?? 'Unknown',
-      Plot: data.Plot ?? 'No plot available.',
-      Poster: data.Poster ?? 'N/A',
-      imdbRating: data.imdbRating ?? 'N/A',
-      imdbID: data.imdbID ?? '',
-      RottenTomatoesRating: rtRating,
+      trackId: m.trackId ?? 0,
+      trackName: m.trackName ?? 'Unknown',
+      artistName: m.artistName ?? 'Unknown',
+      primaryGenreName: m.primaryGenreName ?? 'N/A',
+      contentAdvisoryRating: m.contentAdvisoryRating ?? 'NR',
+      longDescription: m.longDescription ?? '',
+      shortDescription: m.shortDescription ?? '',
+      releaseDate: m.releaseDate ?? '',
+      trackTimeMillis: m.trackTimeMillis ?? 0,
+      artworkUrl100: m.artworkUrl100 ?? '',
+      trackViewUrl: m.trackViewUrl ?? '',
+      trackPrice: m.trackPrice ?? 0,
+      currency: m.currency ?? 'USD',
     };
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`[movie] ${detail}`);
-    throw new Error(`Failed to fetch movie data: ${detail}`);
+    throw new Error(`Failed to search for movie: ${detail}`);
   }
 }
 
