@@ -82,7 +82,7 @@ For nested cards, the package name should include the category: `@hashdo/card-<c
 Use this exact structure. Every card follows the same pattern:
 
 ```typescript
-import { defineCard } from '@hashdo/core';
+import { defineCard, colors, gradients, categoricalColors } from '@hashdo/core';
 
 /**
  * #do/<tag> — <Short description>.
@@ -172,8 +172,7 @@ export default defineCard({
   // Template: inline function or .hbs file path
   template: (vm) => `
     <div style="font-family:system-ui,sans-serif; padding:20px; max-width:380px;
-                background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-                border-radius:12px; color:white;">
+                background:${gradients.purple}; border-radius:12px; color:white;">
       <!-- Card HTML using viewModel values like ${`\${vm.field}`} -->
     </div>
   `,
@@ -221,9 +220,55 @@ export default defineCard({
 - Use inline `template: (vm) => \`...\`` for self-contained cards
 - Style with inline CSS (no external stylesheets)
 - Target `max-width: 320-400px` for card width
-- Use gradients and `border-radius: 12-20px` for the outer container
+- Use `border-radius: 12-20px` for the outer container
 - Use `system-ui, sans-serif` font stack
 - Design for both light and dark backgrounds
+
+### Color Palette
+Cards **must** use the shared color palette from `@hashdo/core`. Never hardcode ad-hoc hex colors.
+
+```typescript
+import { defineCard, colors, categoricalColors, gradients } from '@hashdo/core';
+```
+
+**9 color ramps** — each with 7 stops (50=lightest → 900=darkest):
+`purple`, `teal`, `coral`, `pink`, `gray`, `blue`, `green`, `amber`, `red`
+
+| Stop | Use |
+|------|-----|
+| 50 | Lightest fill (card backgrounds, badges) |
+| 100-200 | Light fills, hover states |
+| 400 | Mid tone (icons, accents, chart series) |
+| 600 | Strong (borders, strokes, subtitles on light fills) |
+| 800-900 | Text on light fills, darkest shade |
+
+**Usage:**
+```typescript
+colors.purple[50]    // '#EEEDFE' — light purple fill
+colors.purple[400]   // '#7F77DD' — mid purple accent
+colors.purple[800]   // '#3C3489' — text on purple-50 bg
+colors.positive      // green.600 — positive change
+colors.negative      // red.600  — negative change
+```
+
+**Header gradients** — use `gradients.<ramp>` for card headers:
+```typescript
+gradients.purple  // 'linear-gradient(135deg, #7F77DD 0%, #534AB7 100%)'
+gradients.teal    // 'linear-gradient(135deg, #1D9E75 0%, #0F6E56 100%)'
+```
+
+**Categorical coloring** (poll options, chart series) — use `categoricalColors`:
+```typescript
+categoricalColors[i % categoricalColors.length]  // cycles through 9 ramp midpoints
+```
+
+**Rules:**
+- Color encodes **meaning**, not sequence. Group by category, not by order.
+- Use 2-3 ramps per card, not 6+.
+- Prefer `purple`, `teal`, `coral`, `pink` for general categories.
+- Reserve `blue`, `green`, `amber`, `red` for semantic meaning (info, success, warning, error).
+- Text on colored backgrounds: use the 800/900 stop from the **same ramp** as the fill.
+- Positive/negative indicators: `colors.positive` / `colors.negative`.
 
 ### State & Instances
 - `CardState` is `Record<string, unknown>` — arbitrary JSON

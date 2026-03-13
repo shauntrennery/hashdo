@@ -1,4 +1,4 @@
-import { defineCard } from '@hashdo/core';
+import { defineCard, colors } from '@hashdo/core';
 
 export default defineCard({
   name: 'do-crypto',
@@ -64,7 +64,7 @@ export default defineCard({
     }
 
     const isPositive = data.change24h >= 0;
-    const color = isPositive ? '#22c55e' : '#ef4444';
+    const color = isPositive ? colors.positive : colors.negative;
     const currencyUpper = currency.toUpperCase();
 
     const formatMarketCap = (cap: number): string => {
@@ -130,13 +130,13 @@ export default defineCard({
           ${
             vm.image
               ? `<img src="${vm.image}" alt="${vm.symbol}" style="width:40px; height:40px; border-radius:10px;" />`
-              : `<div style="width:40px; height:40px; border-radius:10px; background:${vm.isPositive ? '#f0fdf4' : '#fef2f2'}; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:${vm.color};">${(vm.symbol as string).charAt(0)}</div>`
+              : `<div style="width:40px; height:40px; border-radius:10px; background:${vm.isPositive ? colors.green[50] : colors.red[50]}; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:${vm.color};">${(vm.symbol as string).charAt(0)}</div>`
           }
           <div>
             <div style="font-size:16px; font-weight:700; color:#111; letter-spacing:-0.01em;">${vm.symbol}</div>
             <div style="font-size:12px; color:#999; font-weight:400;">${vm.name}</div>
           </div>
-          <div style="margin-left:auto; padding:4px 10px; border-radius:20px; background:${vm.isPositive ? '#f0fdf4' : '#fef2f2'}; color:${vm.color}; font-size:12px; font-weight:600;">${vm.arrow} ${vm.changePercent24h}%</div>
+          <div style="margin-left:auto; padding:4px 10px; border-radius:20px; background:${vm.isPositive ? colors.green[50] : colors.red[50]}; color:${vm.color}; font-size:12px; font-weight:600;">${vm.arrow} ${vm.changePercent24h}%</div>
         </div>
         <div style="margin-bottom:4px;">
           <span style="font-size:36px; font-weight:700; color:#111; letter-spacing:-0.02em;">${typeof vm.price === 'number' ? (vm.price as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : vm.price}</span>

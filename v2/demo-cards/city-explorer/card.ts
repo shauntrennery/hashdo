@@ -1,4 +1,4 @@
-import { defineCard, galleryHtml } from '@hashdo/core';
+import { defineCard, galleryHtml, colors } from '@hashdo/core';
 import type { GalleryImage } from '@hashdo/core';
 
 /**
@@ -616,34 +616,34 @@ function getLocalTime(timezone: string): { formatted: string; hour: number } {
 /** Pick a gradient based on weather and time of day */
 function pickGradient(weatherCode: number, isNight: boolean): string {
   if (isNight) {
-    return 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)';
+    return `linear-gradient(135deg, ${colors.gray[900]} 0%, ${colors.purple[900]} 50%, ${colors.gray[800]} 100%)`;
   }
 
   // Stormy / thunder
   if (weatherCode >= 95) {
-    return 'linear-gradient(135deg, #373B44 0%, #4286f4 100%)';
+    return `linear-gradient(135deg, ${colors.gray[800]} 0%, ${colors.blue[400]} 100%)`;
   }
   // Rain / drizzle
   if (
     (weatherCode >= 51 && weatherCode <= 67) ||
     (weatherCode >= 80 && weatherCode <= 82)
   ) {
-    return 'linear-gradient(135deg, #4B79A1 0%, #283E51 100%)';
+    return `linear-gradient(135deg, ${colors.blue[400]} 0%, ${colors.blue[900]} 100%)`;
   }
   // Snow
   if (weatherCode >= 71 && weatherCode <= 77) {
-    return 'linear-gradient(135deg, #E6DADA 0%, #274046 100%)';
+    return `linear-gradient(135deg, ${colors.gray[100]} 0%, ${colors.teal[900]} 100%)`;
   }
   // Fog
   if (weatherCode >= 45 && weatherCode <= 48) {
-    return 'linear-gradient(135deg, #606c88 0%, #3f4c6b 100%)';
+    return `linear-gradient(135deg, ${colors.gray[400]} 0%, ${colors.gray[800]} 100%)`;
   }
   // Cloudy / overcast
   if (weatherCode >= 2 && weatherCode <= 3) {
-    return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    return `linear-gradient(135deg, ${colors.purple[400]} 0%, ${colors.purple[600]} 100%)`;
   }
   // Clear / mainly clear
-  return 'linear-gradient(135deg, #f5af19 0%, #f12711 30%, #e44d26 60%, #c94b4b 100%)';
+  return `linear-gradient(135deg, ${colors.amber[200]} 0%, ${colors.coral[400]} 50%, ${colors.red[400]} 100%)`;
 }
 
 /** Format a number with locale grouping (1,234,567) */
