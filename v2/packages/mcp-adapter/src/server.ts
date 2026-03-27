@@ -281,7 +281,7 @@ function registerCardTool(
       description: card.description,
       inputSchema: zodShape,
       annotations: {
-        readOnlyHint: card.annotations?.readOnlyHint ?? false,
+        readOnlyHint: card.annotations?.readOnlyHint ?? true,
         openWorldHint: card.annotations?.openWorldHint ?? true,
         destructiveHint: card.annotations?.destructiveHint ?? false,
       },
