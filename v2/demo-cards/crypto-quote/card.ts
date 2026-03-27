@@ -5,6 +5,8 @@ export default defineCard({
   description:
     'Look up a cryptocurrency price by coin ID. Shows current price, 24h change, and market cap. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions a coin, pass it; otherwise use defaults.',
 
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
+
   inputs: {
     coin: {
       type: 'string',
@@ -106,6 +108,7 @@ export default defineCard({
     addToWatchlist: {
       label: 'Add to Watchlist',
       description: 'Add this coin to your personal watchlist for tracking',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       async handler({ cardInputs, state }) {
         const watchlist = (state.watchlist as string[]) ?? [];
         const coin = (cardInputs.coin as string).toLowerCase();

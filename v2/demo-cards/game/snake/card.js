@@ -9,6 +9,7 @@ import { defineCard } from '@hashdo/core';
 export default defineCard({
     name: 'do-game-snake',
     description: 'Play a classic Snake game. Control the snake to eat food and grow without hitting walls or yourself. Call this when the user types #do/game/snake or wants to play a game.',
+    annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
     inputs: {
         speed: {
             type: 'string',
@@ -46,6 +47,7 @@ export default defineCard({
         resetHighScore: {
             label: 'Reset High Score',
             description: 'Clear the persisted high score back to 0',
+            annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
             async handler({ state }) {
                 return {
                     state: { ...state, highScore: 0 },

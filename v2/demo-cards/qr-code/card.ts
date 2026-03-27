@@ -10,6 +10,8 @@ export default defineCard({
     'Generate a QR code image from text or a URL. Returns an embeddable QR code. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions text or a URL, pass it; otherwise use defaults.',
   icon: './icon.svg',
 
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
+
   inputs: {
     content: {
       type: 'string',
@@ -56,6 +58,7 @@ export default defineCard({
     resize: {
       label: 'Resize QR Code',
       description: 'Change the size of the QR code',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         newSize: {
           type: 'number',

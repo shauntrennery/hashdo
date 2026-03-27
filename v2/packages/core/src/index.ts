@@ -17,6 +17,7 @@ export type {
   InputType,
   InputValues,
   CardState,
+  ToolAnnotations,
   ActionDefinition,
   ActionContext,
   ActionResult,

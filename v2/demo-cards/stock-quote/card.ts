@@ -13,6 +13,7 @@ export default defineCard({
   description:
     'Look up a stock price by ticker symbol. Shows current price, daily change, and key stats. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions a ticker, pass it; otherwise use defaults.',
 
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
   shareable: true,
 
   inputs: {
@@ -97,6 +98,7 @@ export default defineCard({
     addToWatchlist: {
       label: 'Add to Watchlist',
       description: 'Add this stock to your personal watchlist for tracking',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       async handler({ cardInputs, state }) {
         const watchlist = (state.watchlist as string[]) ?? [];
         const symbol = (cardInputs.symbol as string).toUpperCase();
@@ -116,6 +118,7 @@ export default defineCard({
     setAlert: {
       label: 'Set Price Alert',
       description: 'Set an alert when the stock reaches a target price',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         targetPrice: {
           type: 'number',

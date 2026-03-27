@@ -5,6 +5,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import {
   type CardDefinition,
   type InputSchema,
+  type ToolAnnotations,
   type CardState,
   type StateStore,
   MemoryStateStore,
@@ -280,9 +281,9 @@ function registerCardTool(
       description: card.description,
       inputSchema: zodShape,
       annotations: {
-        readOnlyHint: true,
-        openWorldHint: true,
-        destructiveHint: false,
+        readOnlyHint: card.annotations?.readOnlyHint ?? false,
+        openWorldHint: card.annotations?.openWorldHint ?? true,
+        destructiveHint: card.annotations?.destructiveHint ?? false,
       },
       _meta: {
         ui: {
@@ -371,9 +372,20 @@ function registerActionTools(
   for (const [actionName, action] of Object.entries(card.actions)) {
     const toolName = `${card.name}__${actionName}`;
 
-    // Merge card inputs + action-specific inputs for the tool schema
+    // Only include card inputs specified by action.cardInputs (or all if not set)
+    const relevantCardInputs: InputSchema = {};
+    if (action.cardInputs) {
+      for (const key of action.cardInputs) {
+        if (key in card.inputs) {
+          relevantCardInputs[key] = card.inputs[key];
+        }
+      }
+    } else {
+      Object.assign(relevantCardInputs, card.inputs);
+    }
+
     const combinedInputs: InputSchema = {
-      ...card.inputs,
+      ...relevantCardInputs,
       ...(action.inputs ?? {}),
     };
     const zodShape = inputSchemaToZodShape(combinedInputs);
@@ -387,9 +399,9 @@ function registerActionTools(
         description,
         inputSchema: zodShape,
         annotations: {
-          readOnlyHint: false,
-          openWorldHint: false,
-          destructiveHint: false,
+          readOnlyHint: action.annotations?.readOnlyHint ?? false,
+          openWorldHint: action.annotations?.openWorldHint ?? false,
+          destructiveHint: action.annotations?.destructiveHint ?? false,
         },
       },
       async (params: Record<string, unknown>) => {

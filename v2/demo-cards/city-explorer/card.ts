@@ -16,6 +16,7 @@ export default defineCard({
   description:
     'Explore any city in the world. Shows current weather, local time, country flag, population, currency, languages, and a photo gallery in a single card. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions a city, pass it; otherwise use defaults.',
 
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
   shareable: true,
 
   inputs: {
@@ -171,6 +172,7 @@ export default defineCard({
     toggleFavorite: {
       label: 'Toggle Favorite',
       description: 'Add or remove this city from your favorites list',
+      annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
       async handler({ cardInputs, state }) {
         const favorites = (state.favorites as string[]) ?? [];
         const city = cardInputs.city as string;
@@ -199,6 +201,7 @@ export default defineCard({
     listFavorites: {
       label: 'Show Favorites',
       description: 'List all cities saved to your favorites',
+      annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
       async handler({ state }) {
         const favorites = (state.favorites as string[]) ?? [];
         if (favorites.length === 0) {
@@ -213,6 +216,7 @@ export default defineCard({
     toggleUnits: {
       label: 'Switch Temperature Units',
       description: 'Toggle between Celsius and Fahrenheit',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       async handler({ state }) {
         const current = (state.preferredUnits as string) || 'celsius';
         const next = current === 'celsius' ? 'fahrenheit' : 'celsius';

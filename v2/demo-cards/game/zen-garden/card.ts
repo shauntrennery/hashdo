@@ -12,6 +12,7 @@ export default defineCard({
   description:
     'Rake a Japanese zen garden. Drag to create sand patterns around stones. The garden resets daily with new stones. Call this when the user types #do/game/zen-garden or wants a relaxing zen activity.',
 
+  annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
   shareable: true,
 
   inputs: {
@@ -63,6 +64,7 @@ export default defineCard({
     saveStrokes: {
       label: 'Save Garden',
       description: 'Save the current rake strokes to the garden state',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         strokes: {
           type: 'json',
@@ -82,6 +84,7 @@ export default defineCard({
     clearGarden: {
       label: 'Clear Garden',
       description: 'Remove all rake strokes and start fresh',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
       async handler({ state }) {
         return {
           state: { ...state, strokes: [] },

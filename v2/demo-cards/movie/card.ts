@@ -15,8 +15,9 @@ export default defineCard({
 
   description:
     'Look up any movie by title. Shows poster, rating, director, cast, plot, genre, and runtime. ' +
-    'Requires a TMDB API key (free at https://www.themoviedb.org/settings/api). ' +
     'All parameters have defaults — call this tool immediately without asking the user for parameters.',
+
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
 
   inputs: {
     title: {
@@ -33,20 +34,12 @@ export default defineCard({
       description:
         'Optional release year to narrow results (e.g. "2010"). Leave empty for best match.',
     },
-    apiKey: {
-      type: 'string',
-      required: false,
-      default: '',
-      sensitive: true,
-      description:
-        'TMDB API key (v3 auth). Get a free key at https://www.themoviedb.org/settings/api',
-    },
   },
 
   async getData({ inputs, state }) {
     const title = ((inputs.title as string) ?? 'Inception').trim();
     const year = ((inputs.year as string) ?? '').trim();
-    const apiKey = ((inputs.apiKey as string) ?? '').trim();
+    const apiKey = process.env.TMDB_API_KEY ?? '';
 
     if (!title) {
       throw new Error('Please provide a movie title to search for.');
@@ -54,7 +47,7 @@ export default defineCard({
 
     if (!apiKey) {
       throw new Error(
-        'A TMDB API key is required. Get a free key at https://www.themoviedb.org/settings/api and pass it as the apiKey parameter.',
+        'TMDB_API_KEY environment variable is not set. Get a free key at https://www.themoviedb.org/settings/api',
       );
     }
 
@@ -131,6 +124,8 @@ export default defineCard({
     addToWatchlist: {
       label: 'Add to Watchlist',
       description: 'Save this movie to your personal watchlist',
+      cardInputs: [],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         movieId: {
           type: 'string',
@@ -157,6 +152,8 @@ export default defineCard({
     removeFromWatchlist: {
       label: 'Remove from Watchlist',
       description: 'Remove this movie from your watchlist',
+      cardInputs: [],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
       inputs: {
         movieId: {
           type: 'string',
@@ -184,6 +181,8 @@ export default defineCard({
     showWatchlist: {
       label: 'Show Watchlist',
       description: 'Display all movies on your watchlist',
+      cardInputs: [],
+      annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
       async handler({ state }) {
         const watchlist = (state.watchlist as string[]) ?? [];
         if (watchlist.length === 0) {

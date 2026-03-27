@@ -5,6 +5,7 @@ export default defineCard({
   description:
     'Create or open an interactive poll. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions a question or options, pass them; otherwise use defaults. To open an existing poll by ID (e.g. "#do/poll 71a1bc"), pass only the "id" parameter — do NOT pass question or options when opening by ID.',
 
+  annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
   shareable: true,
   uniqueInstance: true,
 
@@ -145,6 +146,8 @@ export default defineCard({
       label: 'Vote',
       description:
         'Cast a vote for one (or more) options. Use the exact option name.',
+      cardInputs: ['id'],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         choice: {
           type: 'string',
@@ -195,6 +198,8 @@ export default defineCard({
     close: {
       label: 'Close Poll',
       description: 'Close the poll so no more votes can be cast',
+      cardInputs: ['id'],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
       permission: 'confirm',
       async handler({ state }) {
         if (state.closed) {
@@ -210,6 +215,8 @@ export default defineCard({
     reopen: {
       label: 'Reopen Poll',
       description: 'Reopen a closed poll to accept votes again',
+      cardInputs: ['id'],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       async handler({ state }) {
         if (!state.closed) {
           return { message: 'Poll is already open.' };
@@ -224,6 +231,8 @@ export default defineCard({
     reset: {
       label: 'Reset Votes',
       description: 'Clear all votes and start fresh',
+      cardInputs: ['id'],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
       permission: 'confirm',
       async handler({ state }) {
         const optionNames = ((state.pollOptions as string) ?? '')

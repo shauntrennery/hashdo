@@ -18,6 +18,8 @@ export default defineCard({
   description:
     'Look up any book by title, author, or ISBN. Shows a gallery of matching covers, plus details for the top result. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions a book, pass it; otherwise use defaults.',
 
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
+
   inputs: {
     query: {
       type: 'string',
@@ -131,6 +133,8 @@ export default defineCard({
     addToReadingList: {
       label: 'Add to Reading List',
       description: 'Save this book to your personal reading list',
+      cardInputs: [],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         bookKey: {
           type: 'string',
@@ -157,6 +161,8 @@ export default defineCard({
     removeFromReadingList: {
       label: 'Remove from Reading List',
       description: 'Remove this book from your reading list',
+      cardInputs: [],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
       inputs: {
         bookKey: {
           type: 'string',
@@ -184,6 +190,8 @@ export default defineCard({
     markAsRead: {
       label: 'Mark as Read',
       description: 'Mark this book as read',
+      cardInputs: [],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         bookKey: {
           type: 'string',
@@ -210,6 +218,8 @@ export default defineCard({
     showReadingList: {
       label: 'Show Reading List',
       description: 'Display all books on your reading list',
+      cardInputs: [],
+      annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
       async handler({ state }) {
         const readingList = (state.readingList as string[]) ?? [];
         if (readingList.length === 0) {

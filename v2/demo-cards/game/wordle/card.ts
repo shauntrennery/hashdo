@@ -12,6 +12,8 @@ export default defineCard({
   description:
     'Play a Wordle word-guessing game. Guess the 5-letter word in 6 tries. Call this when the user types #do/game/wordle or wants to play a word game.',
 
+  annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
+
   inputs: {
     seed: {
       type: 'string',
@@ -52,6 +54,7 @@ export default defineCard({
     resetStats: {
       label: 'Reset Stats',
       description: 'Clear all win/loss statistics',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
       async handler({ state }) {
         return {
           state: { ...state, wins: 0, played: 0, streak: 0, bestStreak: 0 },

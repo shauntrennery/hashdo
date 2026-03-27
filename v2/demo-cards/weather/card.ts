@@ -11,6 +11,7 @@ export default defineCard({
   description:
     'Get current weather for any location. Call this when the user types #do/weather or asks for weather. If no location is given, auto-detects the user\'s location via IP geolocation.',
 
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
   shareable: true,
 
   inputs: {
@@ -18,17 +19,7 @@ export default defineCard({
       type: 'string',
       required: false,
       description:
-        'City or place name (e.g. "New York", "Tokyo"). Leave empty to auto-detect location.',
-    },
-    latitude: {
-      type: 'number',
-      required: false,
-      description: 'Latitude (-90 to 90). If omitted, resolved from city or IP.',
-    },
-    longitude: {
-      type: 'number',
-      required: false,
-      description: 'Longitude (-180 to 180). If omitted, resolved from city or IP.',
+        'City or place name (e.g. "New York", "Tokyo"). Leave empty to auto-detect location via IP geolocation.',
     },
     units: {
       type: 'string',
@@ -41,12 +32,12 @@ export default defineCard({
 
   async getData({ inputs, state }) {
     // ── 1. Resolve location ──────────────────────────────────────────
-    let lat = inputs.latitude as number | undefined;
-    let lon = inputs.longitude as number | undefined;
+    let lat: number | undefined;
+    let lon: number | undefined;
     let locationName = (inputs.city as string) || '';
 
-    // If city given but no coords, geocode it
-    if (locationName && (lat === undefined || lon === undefined)) {
+    // If city given, geocode it
+    if (locationName) {
       const geo = await geocodeCity(locationName);
       if (geo) {
         lat = geo.lat;
@@ -184,6 +175,7 @@ export default defineCard({
     toggleUnits: {
       label: 'Switch Units',
       description: 'Toggle between Celsius and Fahrenheit',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       async handler({ state }) {
         const current = (state.preferredUnits as string) || 'celsius';
         const next = current === 'celsius' ? 'fahrenheit' : 'celsius';

@@ -218,6 +218,7 @@ async function cmdServe() {
         'https://avatars.githubusercontent.com',
         'https://assets.coingecko.com',
         'https://upload.wikimedia.org',
+        'https://image.tmdb.org',
       ],
     },
   });
@@ -598,6 +599,7 @@ async function cmdStart() {
         'https://avatars.githubusercontent.com', // do-github: owner avatars
         'https://assets.coingecko.com',       // do-crypto: coin images
         'https://upload.wikimedia.org',       // do-city: Wikipedia photos
+        'https://image.tmdb.org',             // do-movie: poster images
       ],
     },
   };

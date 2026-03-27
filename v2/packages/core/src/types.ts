@@ -44,6 +44,19 @@ export type InputValues<S extends InputSchema> = {
 export type CardState = Record<string, unknown>;
 
 // ---------------------------------------------------------------------------
+// Tool Annotations (MCP / OpenAI)
+// ---------------------------------------------------------------------------
+
+export interface ToolAnnotations {
+  /** Tool only reads data, does not modify server state */
+  readOnlyHint?: boolean;
+  /** Tool may permanently delete or irreversibly modify data */
+  destructiveHint?: boolean;
+  /** Tool interacts with external systems (APIs, networks) */
+  openWorldHint?: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // Actions
 // ---------------------------------------------------------------------------
 
@@ -56,6 +69,14 @@ export interface ActionDefinition<S extends InputSchema = InputSchema> {
   inputs?: InputSchema;
   /** Permission level required to execute this action */
   permission?: 'auto' | 'confirm' | 'explicit';
+  /**
+   * Which card-level input names are needed to identify the target instance.
+   * Only these (plus action.inputs) appear in the action tool schema.
+   * Omit to include all card inputs (backward compat).
+   */
+  cardInputs?: string[];
+  /** MCP tool annotation overrides for this action */
+  annotations?: ToolAnnotations;
   /** Handler executed when the action is triggered */
   handler: (context: ActionContext<S>) => Promise<ActionResult>;
 }
@@ -135,6 +156,9 @@ export interface CardDefinition<S extends InputSchema = InputSchema> {
   description: string;
   /** Path to icon file (SVG preferred) */
   icon?: string;
+
+  /** MCP tool annotation overrides for the main card tool */
+  annotations?: ToolAnnotations;
 
   /** Input schema — also used to generate MCP tool parameters */
   inputs: S;

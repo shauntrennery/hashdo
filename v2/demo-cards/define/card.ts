@@ -16,6 +16,8 @@ export default defineCard({
   description:
     'Look up the definition of any English word. Shows phonetics, meanings, examples, synonyms, and antonyms. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions a word, pass it; otherwise use defaults.',
 
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
+
   inputs: {
     word: {
       type: 'string',
@@ -109,6 +111,8 @@ export default defineCard({
     addToVocab: {
       label: 'Save to Vocabulary',
       description: 'Add this word to your personal vocabulary list',
+      cardInputs: [],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         word: { type: 'string', required: true, description: 'The word to save' },
       },
@@ -131,6 +135,8 @@ export default defineCard({
     removeFromVocab: {
       label: 'Remove from Vocabulary',
       description: 'Remove this word from your vocabulary list',
+      cardInputs: [],
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
       inputs: {
         word: { type: 'string', required: true, description: 'The word to remove' },
       },
@@ -154,6 +160,8 @@ export default defineCard({
     showVocab: {
       label: 'Show Vocabulary List',
       description: 'Display all saved vocabulary words',
+      cardInputs: [],
+      annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
       async handler({ state }) {
         const vocabList = (state.vocabList as string[]) ?? [];
         if (vocabList.length === 0) {

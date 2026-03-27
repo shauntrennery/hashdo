@@ -12,6 +12,8 @@ export default defineCard({
   description:
     'Look up any public GitHub repository. Shows stars, forks, language, description, topics, and license. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions a repo, pass it; otherwise use defaults.',
 
+  annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
+
   inputs: {
     repo: {
       type: 'string',
@@ -112,6 +114,7 @@ export default defineCard({
     bookmark: {
       label: 'Bookmark Repo',
       description: 'Save this repository to your bookmarks',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
       inputs: {
         repo: { type: 'string', required: true, description: 'Full repo name (owner/name)' },
       },
@@ -134,6 +137,7 @@ export default defineCard({
     removeBookmark: {
       label: 'Remove Bookmark',
       description: 'Remove this repo from bookmarks',
+      annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: true },
       inputs: {
         repo: { type: 'string', required: true, description: 'Full repo name (owner/name)' },
       },
@@ -157,6 +161,7 @@ export default defineCard({
     showBookmarks: {
       label: 'Show Bookmarks',
       description: 'List all bookmarked repositories',
+      annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false },
       async handler({ state }) {
         const bookmarks = (state.bookmarks as string[]) ?? [];
         if (bookmarks.length === 0) {
