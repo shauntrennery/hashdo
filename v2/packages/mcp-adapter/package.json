@@ -20,13 +20,13 @@
   "dependencies": {
     "@hashdo/core": "2.0.0-alpha.1",
     "@hashdo/screenshot": "2.0.0-alpha.1",
-    "@modelcontextprotocol/ext-apps": "1.0.1",
-    "@modelcontextprotocol/sdk": "1.26.0",
+    "@modelcontextprotocol/ext-apps": "1.3.1",
+    "@modelcontextprotocol/sdk": "1.28.0",
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^25.2.2",
-    "typescript": "^5.9.3"
+    "@types/node": "25.5.0",
+    "typescript": "6.0.2"
   },
   "license": "MIT"
 }
