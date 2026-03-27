@@ -22,7 +22,9 @@ COPY demo-cards/crypto-quote/package.json demo-cards/crypto-quote/
 COPY demo-cards/define/package.json demo-cards/define/
 COPY demo-cards/game/snake/package.json demo-cards/game/snake/
 COPY demo-cards/game/wordle/package.json demo-cards/game/wordle/
+COPY demo-cards/game/zen-garden/package.json demo-cards/game/zen-garden/
 COPY demo-cards/github-repo/package.json demo-cards/github-repo/
+COPY demo-cards/movie/package.json demo-cards/movie/
 COPY demo-cards/poll/package.json demo-cards/poll/
 COPY demo-cards/qr-code/package.json demo-cards/qr-code/
 COPY demo-cards/stock-quote/package.json demo-cards/stock-quote/
