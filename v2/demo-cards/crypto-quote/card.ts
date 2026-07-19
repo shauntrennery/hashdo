@@ -1,4 +1,4 @@
-import { defineCard, colors } from '@hashdo/core';
+import { defineCard, colors, escapeHtml, safeHttpUrl } from '@hashdo/core';
 
 export default defineCard({
   name: 'do-crypto',
@@ -6,6 +6,10 @@ export default defineCard({
     'Look up a cryptocurrency price by coin ID. Shows current price, 24h change, and market cap. All parameters have defaults — call this tool immediately without asking the user for parameters. If the user mentions a coin, pass it; otherwise use defaults.',
 
   annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
+
+  // Scope the watchlist to the viewer, not to the looked-up coin, so the list
+  // follows the user across coins and never leaks to other users.
+  stateKey: (_inputs, userId) => (userId ? `user:${userId}` : undefined),
 
   inputs: {
     coin: {
@@ -132,12 +136,12 @@ export default defineCard({
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
           ${
             vm.image
-              ? `<img src="${vm.image}" alt="${vm.symbol}" style="width:40px; height:40px; border-radius:10px;" />`
+              ? `<img src="${escapeHtml(safeHttpUrl(vm.image))}" alt="${escapeHtml(vm.symbol)}" style="width:40px; height:40px; border-radius:10px;" />`
               : `<div style="width:40px; height:40px; border-radius:10px; background:${vm.isPositive ? colors.green[50] : colors.red[50]}; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:${vm.color};">${(vm.symbol as string).charAt(0)}</div>`
           }
           <div>
-            <div style="font-size:16px; font-weight:700; color:#111; letter-spacing:-0.01em;">${vm.symbol}</div>
-            <div style="font-size:12px; color:#999; font-weight:400;">${vm.name}</div>
+            <div style="font-size:16px; font-weight:700; color:#111; letter-spacing:-0.01em;">${escapeHtml(vm.symbol)}</div>
+            <div style="font-size:12px; color:#999; font-weight:400;">${escapeHtml(vm.name)}</div>
           </div>
           <div style="margin-left:auto; padding:4px 10px; border-radius:20px; background:${vm.isPositive ? colors.green[50] : colors.red[50]}; color:${vm.color}; font-size:12px; font-weight:600;">${vm.arrow} ${vm.changePercent24h}%</div>
         </div>

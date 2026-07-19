@@ -29,11 +29,30 @@ export interface InputDefinition {
 /** Map of input name → definition */
 export type InputSchema = Record<string, InputDefinition>;
 
-/** Derive a typed values object from an InputSchema */
-export type InputValues<S extends InputSchema> = {
-  [K in keyof S]: S[K]['type'] extends 'number' ? number
-    : S[K]['type'] extends 'boolean' ? boolean
+/** Map an input's declared type to its runtime value type. */
+type InputValueType<D extends InputDefinition> = D['type'] extends 'number'
+  ? number
+  : D['type'] extends 'boolean'
+    ? boolean
     : string;
+
+/**
+ * An input is guaranteed present (after defaults are applied) when it is
+ * `required` or declares a `default`; otherwise it may be `undefined` at
+ * runtime. `undefined extends D['default']` is true both when no default is
+ * declared (`unknown`) and when it is explicitly `undefined`.
+ */
+type InputIsPresent<D extends InputDefinition> = D['required'] extends true
+  ? true
+  : undefined extends D['default']
+    ? false
+    : true;
+
+/** Derive a typed values object from an InputSchema. */
+export type InputValues<S extends InputSchema> = {
+  [K in keyof S as InputIsPresent<S[K]> extends true ? K : never]: InputValueType<S[K]>;
+} & {
+  [K in keyof S as InputIsPresent<S[K]> extends true ? never : K]?: InputValueType<S[K]>;
 };
 
 // ---------------------------------------------------------------------------

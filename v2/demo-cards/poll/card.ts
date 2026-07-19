@@ -1,4 +1,4 @@
-import { defineCard, categoricalColors, gradients } from '@hashdo/core';
+import { defineCard, categoricalColors, gradients, escapeHtml } from '@hashdo/core';
 
 export default defineCard({
   name: 'do-poll',
@@ -265,12 +265,12 @@ export default defineCard({
     const optionRows = options
       .map(
         (opt, i) => `
-      <div class="poll-option" data-index="${i}" data-color="${opt.color}" data-name="${opt.name}" data-count="${opt.count}">
+      <div class="poll-option" data-index="${i}" data-color="${opt.color}" data-name="${escapeHtml(opt.name)}" data-count="${opt.count}">
         <div class="poll-bar" data-bar></div>
         <div class="poll-content">
           <div style="display:flex;align-items:center;gap:10px">
             <div class="poll-dot" data-dot>${checkSvg}</div>
-            <span style="font-size:15px;font-weight:500;color:#1f2937">${opt.name}</span>
+            <span style="font-size:15px;font-weight:500;color:#1f2937">${escapeHtml(opt.name)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="poll-pct" data-pct style="color:${opt.color}">${opt.pct}%</span>
@@ -282,7 +282,7 @@ export default defineCard({
       .join('');
 
     return `
-    <div class="poll-card" data-closed="${closed}" data-poll-id="${pollId}" data-api="${vm.apiBaseUrl as string}" data-voter-count="${vm.voterCount as number}">
+    <div class="poll-card" data-closed="${closed}" data-poll-id="${escapeHtml(pollId)}" data-api="${escapeHtml(vm.apiBaseUrl as string)}" data-voter-count="${vm.voterCount as number}">
       <style>
         .poll-card{font-family:'SF Pro Display',system-ui,-apple-system,sans-serif;max-width:400px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
         .poll-header{padding:24px 24px 20px;background:${gradients.purple};color:#fff}
@@ -314,9 +314,9 @@ export default defineCard({
               ${closed ? 'Poll Closed' : 'Live Poll'}
             </span>
           </div>
-          <span class="poll-id">${pollId}</span>
+          <span class="poll-id">${escapeHtml(pollId)}</span>
         </div>
-        <div style="font-size:20px;font-weight:700;line-height:1.3;letter-spacing:-.01em">${question}</div>
+        <div style="font-size:20px;font-weight:700;line-height:1.3;letter-spacing:-.01em">${escapeHtml(question)}</div>
       </div>
       <div style="padding:20px 20px 8px" data-options>${optionRows}</div>
       <div class="poll-footer">

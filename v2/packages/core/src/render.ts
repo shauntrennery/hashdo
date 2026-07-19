@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { CardDefinition, InputSchema, InputValues, CardState } from './types.js';
 import { computeInstanceId } from './instance.js';
+import { escapeHtml, sanitizeId } from './html.js';
 
 /**
  * Render a card to HTML, given its inputs and current state.
@@ -27,7 +28,15 @@ export async function renderCard<S extends InputSchema>(
     result = await card.getData({ inputs, rawInputs: inputs, state, baseUrl: options?.baseUrl ?? '', userId: options?.userId });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const instanceId = computeInstanceId(card, inputs);
+    // computeInstanceId re-invokes card.stateKey on the same inputs that just
+    // failed; guard it so a throwing stateKey can't escape this catch block and
+    // suppress the styled error card.
+    let instanceId: string;
+    try {
+      instanceId = computeInstanceId(card, inputs);
+    } catch {
+      instanceId = 'error';
+    }
     const errorHtml = renderErrorCard(card.name, message, instanceId);
     return {
       html: errorHtml,
@@ -57,16 +66,21 @@ export async function renderCard<S extends InputSchema>(
 
   // 3. Compute instance ID (always) and share bar (only for shareable cards)
   const instanceId = computeInstanceId(card, inputs);
+  // instanceId can derive from user-controlled inputs (e.g. a card's stateKey);
+  // restrict it and the card name to attribute-safe characters before they land
+  // in the wrapper's data-* attributes.
+  const safeInstanceId = sanitizeId(instanceId);
+  const safeCardName = escapeHtml(card.name);
   const shareBar = card.shareable ? renderShareBar(card.name, instanceId, options?.baseUrl) : '';
 
   // 4. Wrap in card container (share button peeks from under the card edge)
   const wrappedHtml = shareBar
     ? `
-<div class="hashdo-card" data-card="${card.name}" data-instance-id="${instanceId}" data-share-id="${instanceId}" style="position:relative;width:fit-content;margin:24px;">
+<div class="hashdo-card" data-card="${safeCardName}" data-instance-id="${safeInstanceId}" data-share-id="${safeInstanceId}" style="position:relative;width:fit-content;margin:24px;">
   ${shareBar}<div style="position:relative;z-index:1;">${html}</div>
 </div>`.trim()
     : `
-<div class="hashdo-card" data-card="${card.name}" data-instance-id="${instanceId}" style="margin:24px;">
+<div class="hashdo-card" data-card="${safeCardName}" data-instance-id="${safeInstanceId}" style="margin:24px;">
   ${html}
 </div>`.trim();
 
@@ -90,10 +104,13 @@ function renderShareBar(cardName: string, shareId: string, baseUrl?: string): st
 
 /** Render a styled error card when getData fails. */
 function renderErrorCard(cardName: string, message: string, instanceId: string): string {
-  const tag = cardName.startsWith('do-') ? `#do/${cardName.slice(3)}` : `#${cardName}`;
-  const escaped = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rawTag = cardName.startsWith('do-') ? `#do/${cardName.slice(3)}` : `#${cardName}`;
+  const tag = escapeHtml(rawTag);
+  const safeCardName = escapeHtml(cardName);
+  const safeInstanceId = sanitizeId(instanceId);
+  const escaped = escapeHtml(message);
   return `
-<div class="hashdo-card" data-card="${cardName}" data-instance-id="${instanceId}" style="margin:24px;">
+<div class="hashdo-card" data-card="${safeCardName}" data-instance-id="${safeInstanceId}" style="margin:24px;">
   <div style="font-family:'SF Pro Display',system-ui,-apple-system,sans-serif;max-width:400px;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="padding:24px 24px 20px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">

@@ -6,6 +6,8 @@ export { computeInstanceId, resolveInstance, stableKey, prepareInputs } from './
 export { MemoryStateStore } from './state-store.js';
 export { galleryHtml } from './gallery.js';
 export type { GalleryImage, GalleryConfig } from './gallery.js';
+export { escapeHtml, escapeAttr, jsonForScript, sanitizeId, safeHttpUrl, fetchJson } from './html.js';
+export type { FetchJsonOptions } from './html.js';
 export { colors, categoricalColors, rampGradient, gradients } from './palette.js';
 export type { ColorStop, ColorRamp, RampName } from './palette.js';
 

@@ -1,4 +1,4 @@
-import { defineCard, galleryHtml, colors } from '@hashdo/core';
+import { defineCard, galleryHtml, colors, escapeHtml } from '@hashdo/core';
 import type { GalleryImage } from '@hashdo/core';
 
 /**
@@ -18,6 +18,10 @@ export default defineCard({
 
   annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
   shareable: true,
+
+  // Scope favorites/history to the viewer, not to the looked-up city, so the
+  // list follows the user across cities and never leaks to other users.
+  stateKey: (_inputs, userId) => (userId ? `user:${userId}` : undefined),
 
   inputs: {
     city: {
@@ -249,18 +253,18 @@ export default defineCard({
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
             <div style="font-size:28px; font-weight:700; letter-spacing:-0.02em; line-height:1.1;">
-              ${vm.cityName}
+              ${escapeHtml(vm.cityName)}
             </div>
             <div style="font-size:14px; opacity:0.85; margin-top:4px;">
-              ${vm.countryName} ${vm.countryFlag}
+              ${escapeHtml(vm.countryName)} ${escapeHtml(vm.countryFlag)}
             </div>
           </div>
           <div style="text-align:right;">
             <div style="font-size:22px; font-weight:600; letter-spacing:-0.01em;">
-              ${vm.localTime}
+              ${escapeHtml(vm.localTime)}
             </div>
             <div style="font-size:11px; opacity:0.7; margin-top:2px;">
-              ${vm.timezone}
+              ${escapeHtml(vm.timezone)}
             </div>
           </div>
         </div>
@@ -273,7 +277,7 @@ export default defineCard({
           <div style="font-size:44px; font-weight:700; letter-spacing:-0.03em; line-height:1;">
             ${vm.temp}<span style="font-size:22px; font-weight:400; opacity:0.8;">\u00b0${vm.unitSymbol}</span>
           </div>
-          <div style="font-size:15px; opacity:0.9; margin-top:2px;">${vm.weatherCondition}</div>
+          <div style="font-size:15px; opacity:0.9; margin-top:2px;">${escapeHtml(vm.weatherCondition)}</div>
           <div style="font-size:12px; opacity:0.7;">Feels like ${vm.feelsLike}\u00b0${vm.unitSymbol}</div>
         </div>
       </div>
@@ -322,15 +326,15 @@ export default defineCard({
           </div>
           <div>
             <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; opacity:0.6;">Currency</div>
-            <div style="font-size:13px; font-weight:500; margin-top:2px;">${vm.currency}</div>
+            <div style="font-size:13px; font-weight:500; margin-top:2px;">${escapeHtml(vm.currency)}</div>
           </div>
           <div>
             <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; opacity:0.6;">Languages</div>
-            <div style="font-size:13px; font-weight:500; margin-top:2px;">${vm.languages}</div>
+            <div style="font-size:13px; font-weight:500; margin-top:2px;">${escapeHtml(vm.languages)}</div>
           </div>
         </div>
         <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.15); display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-size:11px; opacity:0.6;">${vm.region}${vm.subregion ? ' \u2014 ' + vm.subregion : ''}</span>
+          <span style="font-size:11px; opacity:0.6;">${escapeHtml(vm.region)}${vm.subregion ? ' \u2014 ' + escapeHtml(vm.subregion) : ''}</span>
           <span style="font-size:11px; opacity:0.6;">${vm.lat}\u00b0, ${vm.lon}\u00b0</span>
         </div>
       </div>

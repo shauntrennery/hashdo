@@ -1,4 +1,4 @@
-import { defineCard, galleryHtml, gradients } from '@hashdo/core';
+import { defineCard, galleryHtml, gradients, escapeHtml, safeHttpUrl } from '@hashdo/core';
 import type { GalleryImage } from '@hashdo/core';
 
 /**
@@ -251,7 +251,7 @@ export default defineCard({
       <!-- Hero: cover + title side by side -->
       <div style="display:flex; gap:20px; padding:24px 24px 20px; background:${vm.accent};">
         ${vm.coverUrl ? `
-        <img src="${vm.coverUrl}" alt="Cover"
+        <img src="${escapeHtml(safeHttpUrl(vm.coverUrl))}" alt="Cover"
              style="width:100px; height:150px; object-fit:cover; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.3); flex-shrink:0;" />
         ` : `
         <div style="width:100px; height:150px; border-radius:10px; background:rgba(255,255,255,0.15); flex-shrink:0; display:flex; align-items:center; justify-content:center;">
@@ -260,14 +260,14 @@ export default defineCard({
         `}
         <div style="flex:1; min-width:0; display:flex; flex-direction:column; justify-content:flex-end;">
           <div style="font-size:20px; font-weight:700; color:#fff; line-height:1.25; text-shadow:0 1px 3px rgba(0,0,0,0.2);">
-            ${vm.title}
+            ${escapeHtml(vm.title)}
           </div>
           <div style="font-size:13px; color:rgba(255,255,255,0.85); margin-top:6px;">
-            ${vm.authors}
+            ${escapeHtml(vm.authors)}
           </div>
           ${vm.publisher ? `
           <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px;">
-            ${vm.publisher}
+            ${escapeHtml(vm.publisher)}
           </div>
           ` : ''}
         </div>
@@ -320,7 +320,7 @@ export default defineCard({
           </span>
           `}
         </div>
-        <a href="${vm.olUrl}" target="_blank" rel="noopener"
+        <a href="${escapeHtml(safeHttpUrl(vm.olUrl))}" target="_blank" rel="noopener"
            style="font-size:12px; color:#4f46e5; text-decoration:none; font-weight:500;">
           Open Library &rarr;
         </a>

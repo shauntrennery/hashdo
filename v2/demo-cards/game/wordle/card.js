@@ -1,4 +1,4 @@
-import { defineCard } from '@hashdo/core';
+import { defineCard, jsonForScript } from '@hashdo/core';
 /**
  * #do/game/wordle — Word-guessing game card.
  *
@@ -87,7 +87,7 @@ export default defineCard({
 
       <script>
       (function() {
-        var SEED = ${JSON.stringify(vm.seed || '')};
+        var SEED = ${jsonForScript(vm.seed || '')};
 
         // Simple string hash for deterministic word selection
         function hashSeed(s) {
@@ -124,7 +124,7 @@ export default defineCard({
           'order','other','outer','owner','oxide','panel','panic','paper','party','paste',
           'patch','pause','peace','pearl','penny','phase','phone','photo','piano','pilot',
           'pitch','pixel','place','plain','plane','plant','plate','plaza','plead','point',
-          'polar','pound','power','press','price','pride','prime','prince','print','prior',
+          'polar','pound','power','press','price','pride','prime','prone','print','prior',
           'prize','proof','proud','prove','psalm','punch','pupil','queen','quest','queue',
           'quiet','quote','radar','radio','raise','range','rapid','ratio','reach','react',
           'ready','realm','rebel','reign','relax','reply','rider','ridge','rifle','right',
@@ -137,7 +137,7 @@ export default defineCard({
           'smile','smoke','snake','solar','solid','solve','sorry','sound','south','space',
           'spare','speak','speed','spend','spice','spine','split','spoon','sport','spray',
           'squad','stack','staff','stage','stain','stake','stale','stall','stamp','stand',
-          'stare','stark','start','state','stays','steady','steam','steel','steep','steer',
+          'stare','stark','start','state','stays','stray','steam','steel','steep','steer',
           'stern','stick','stiff','still','stock','stone','stood','store','storm','story',
           'stove','strap','straw','strip','stuck','stuff','style','sugar','suite','super',
           'surge','swamp','swear','sweet','swept','swift','swing','sword','syrup','table',

@@ -1,4 +1,4 @@
-import { defineCard } from '@hashdo/core';
+import { defineCard, jsonForScript } from '@hashdo/core';
 /**
  * #do/game/zen-garden — Japanese dry garden (karesansui) raking game.
  *
@@ -6,6 +6,25 @@ import { defineCard } from '@hashdo/core';
  * The garden resets daily with a new stone arrangement.
  * Collaborative: everyone shares the same daily garden.
  */
+// The saveStrokes action accepts arbitrary JSON, and the strokes are later
+// embedded into an inline <script>. Coerce every point to a finite number and
+// cap the counts so no attacker-supplied string (e.g. one containing
+// `</script>`) can survive into the rendered page.
+const MAX_STROKES = 500;
+const MAX_POINTS_PER_STROKE = 2000;
+function sanitizeStrokes(raw) {
+    if (!Array.isArray(raw))
+        return [];
+    return raw
+        .slice(0, MAX_STROKES)
+        .map((stroke) => Array.isArray(stroke)
+        ? stroke
+            .slice(0, MAX_POINTS_PER_STROKE)
+            .map((p) => ({ x: Number(p?.x), y: Number(p?.y) }))
+            .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+        : [])
+        .filter((stroke) => stroke.length > 0);
+}
 export default defineCard({
     name: 'do-game-zen-garden',
     description: 'Rake a Japanese zen garden. Drag to create sand patterns around stones. The garden resets daily with new stones. Call this when the user types #do/game/zen-garden or wants a relaxing zen activity.',
@@ -26,7 +45,7 @@ export default defineCard({
     async getData({ inputs, state }) {
         const seed = inputs.seed ||
             new Date().toISOString().slice(0, 10);
-        const strokes = state.strokes ?? [];
+        const strokes = sanitizeStrokes(state.strokes);
         const strokeCount = strokes.length;
         const textOutput = [
             '## Zen Garden',
@@ -40,7 +59,7 @@ export default defineCard({
         return {
             viewModel: {
                 seed,
-                strokes: JSON.stringify(strokes),
+                strokes,
                 strokeCount,
             },
             textOutput,
@@ -60,7 +79,7 @@ export default defineCard({
                 },
             },
             async handler({ state, actionInputs }) {
-                const newStrokes = actionInputs.strokes;
+                const newStrokes = sanitizeStrokes(actionInputs.strokes);
                 return {
                     state: { ...state, strokes: newStrokes },
                     message: 'Garden saved.',
@@ -127,8 +146,8 @@ export default defineCard({
 
   <script>
   (function() {
-    var SEED = ${JSON.stringify(vm.seed)};
-    var initialStrokes = ${vm.strokes};
+    var SEED = ${jsonForScript(vm.seed)};
+    var initialStrokes = ${jsonForScript(vm.strokes)};
     var MAX_STROKES = 100;
     var RAKE_TINES = 9;
     var TINE_SPACING = 8;

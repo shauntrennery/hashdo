@@ -1,4 +1,4 @@
-import { defineCard, colors, gradients } from '@hashdo/core';
+import { defineCard, colors, gradients, escapeHtml, safeHttpUrl } from '@hashdo/core';
 
 /**
  * #do/movie — Movie lookup card with poster, ratings, and watchlist.
@@ -204,7 +204,7 @@ export default defineCard({
       <!-- Hero: poster + title -->
       <div style="display:flex; gap:20px; padding:24px 24px 20px; background:${vm.accent};">
         ${vm.posterUrl ? `
-        <img src="${vm.posterUrl}" alt="Poster"
+        <img src="${escapeHtml(safeHttpUrl(vm.posterUrl))}" alt="Poster"
              style="width:110px; height:165px; object-fit:cover; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.3); flex-shrink:0;" />
         ` : `
         <div style="width:110px; height:165px; border-radius:10px; background:rgba(255,255,255,0.15); flex-shrink:0; display:flex; align-items:center; justify-content:center;">
@@ -213,13 +213,13 @@ export default defineCard({
         `}
         <div style="flex:1; min-width:0; display:flex; flex-direction:column; justify-content:flex-end;">
           <div style="font-size:20px; font-weight:700; color:#fff; line-height:1.25; text-shadow:0 1px 3px rgba(0,0,0,0.2);">
-            ${vm.title}
+            ${escapeHtml(vm.title)}
           </div>
           <div style="font-size:13px; color:rgba(255,255,255,0.85); margin-top:6px;">
-            ${vm.year} &middot; ${vm.runtime}
+            ${escapeHtml(vm.year)} &middot; ${escapeHtml(vm.runtime)}
           </div>
           <div style="font-size:12px; color:rgba(255,255,255,0.7); margin-top:4px;">
-            Directed by ${vm.director}
+            Directed by ${escapeHtml(vm.director)}
           </div>
         </div>
       </div>
@@ -242,19 +242,19 @@ export default defineCard({
 
       <!-- Genre tags -->
       <div style="padding:16px 24px 12px; display:flex; gap:6px; flex-wrap:wrap;">
-        ${genres.map((g: string) => `<span style="display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:500; background:#f8f9fa; color:#6b7280; border:1px solid #e5e7eb;">${g}</span>`).join('')}
+        ${genres.map((g: string) => `<span style="display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:500; background:#f8f9fa; color:#6b7280; border:1px solid #e5e7eb;">${escapeHtml(g)}</span>`).join('')}
       </div>
 
       <!-- Cast -->
       <div style="padding:0 24px 12px;">
         <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-bottom:4px;">Cast</div>
-        <div style="font-size:13px; color:#374151; line-height:1.4;">${vm.cast}</div>
+        <div style="font-size:13px; color:#374151; line-height:1.4;">${escapeHtml(vm.cast)}</div>
       </div>
 
       <!-- Plot -->
       <div style="padding:0 24px 16px;">
         <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; margin-bottom:4px;">Plot</div>
-        <div style="font-size:13px; color:#4b5563; line-height:1.5;">${(vm.plot as string).length > 300 ? (vm.plot as string).slice(0, 297) + '...' : vm.plot}</div>
+        <div style="font-size:13px; color:#4b5563; line-height:1.5;">${escapeHtml((vm.plot as string).length > 300 ? (vm.plot as string).slice(0, 297) + '...' : (vm.plot as string))}</div>
       </div>
 
       <!-- Footer -->
@@ -271,7 +271,7 @@ export default defineCard({
           </span>
           `}
         </div>
-        <a href="${vm.tmdbUrl}" target="_blank" rel="noopener"
+        <a href="${escapeHtml(safeHttpUrl(vm.tmdbUrl))}" target="_blank" rel="noopener"
            style="font-size:12px; color:#4f46e5; text-decoration:none; font-weight:500;">
           TMDB &rarr;
         </a>

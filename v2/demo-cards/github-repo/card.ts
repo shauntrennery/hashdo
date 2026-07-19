@@ -1,4 +1,4 @@
-import { defineCard, colors, gradients } from '@hashdo/core';
+import { defineCard, colors, gradients, escapeHtml, safeHttpUrl } from '@hashdo/core';
 
 /**
  * #do/repo — GitHub repository profile card.
@@ -23,6 +23,10 @@ export default defineCard({
         'Repository in "owner/name" format (e.g. "facebook/react", "torvalds/linux") or a GitHub URL. Has a sensible default — only override if the user specifies a repo.',
     },
   },
+
+  // Scope bookmarks (and lookup counters) to the viewer, not to the looked-up
+  // repo, so a user's list follows them across repos and never leaks to others.
+  stateKey: (_inputs, userId) => (userId ? `user:${userId}` : undefined),
 
   async getData({ inputs, state }) {
     const raw = ((inputs.repo as string) ?? 'shauntrennery/hashdo').trim();
@@ -179,7 +183,7 @@ export default defineCard({
 
     const topicPills = topics.length > 0
       ? `<div style="padding:0 24px 16px; display:flex; gap:6px; flex-wrap:wrap;">
-          ${topics.map((t: string) => `<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; background:${colors.purple[50]}; color:${colors.purple[800]}; border:1px solid ${colors.purple[100]};">${t}</span>`).join('')}
+          ${topics.map((t: string) => `<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; background:${colors.purple[50]}; color:${colors.purple[800]}; border:1px solid ${colors.purple[100]};">${escapeHtml(t)}</span>`).join('')}
         </div>`
       : '';
 
@@ -188,12 +192,12 @@ export default defineCard({
         <!-- Header -->
         <div style="padding:24px 24px 16px; background:${vm.accent};">
           <div style="display:flex; gap:14px; align-items:center;">
-            <img src="${vm.ownerAvatar}" alt="${vm.owner}"
+            <img src="${escapeHtml(safeHttpUrl(vm.ownerAvatar))}" alt="${escapeHtml(vm.owner)}"
                  style="width:48px; height:48px; border-radius:12px; border:2px solid rgba(255,255,255,0.3);" />
             <div style="flex:1; min-width:0;">
-              <div style="font-size:13px; color:rgba(255,255,255,0.8);">${vm.owner}</div>
+              <div style="font-size:13px; color:rgba(255,255,255,0.8);">${escapeHtml(vm.owner)}</div>
               <div style="font-size:22px; font-weight:700; color:#fff; letter-spacing:-0.02em; line-height:1.2; overflow:hidden; text-overflow:ellipsis;">
-                ${vm.name}
+                ${escapeHtml(vm.name)}
               </div>
             </div>
             ${vm.isBookmarked ? `
@@ -208,7 +212,7 @@ export default defineCard({
         ${vm.description ? `
         <div style="padding:16px 24px 12px;">
           <div style="font-size:14px; color:#4b5563; line-height:1.5;">
-            ${vm.description}
+            ${escapeHtml(vm.description)}
           </div>
         </div>
         ` : ''}
@@ -239,14 +243,14 @@ export default defineCard({
               ${vm.language ? `
               <span style="display:flex; align-items:center; gap:4px;">
                 <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${vm.accent};"></span>
-                ${vm.language}
+                ${escapeHtml(vm.language)}
               </span>
               ` : ''}
-              ${vm.license ? `<span>${vm.license}</span>` : ''}
+              ${vm.license ? `<span>${escapeHtml(vm.license)}</span>` : ''}
             </div>
             <div style="display:flex; gap:12px; align-items:center;">
-              <span style="font-size:11px; color:#9ca3af;">Updated ${vm.updatedAgo}</span>
-              <a href="${vm.htmlUrl}" target="_blank" rel="noopener"
+              <span style="font-size:11px; color:#9ca3af;">Updated ${escapeHtml(vm.updatedAgo)}</span>
+              <a href="${escapeHtml(safeHttpUrl(vm.htmlUrl))}" target="_blank" rel="noopener"
                  style="font-size:12px; color:#4f46e5; text-decoration:none; font-weight:500;">
                 GitHub &rarr;
               </a>
@@ -311,8 +315,10 @@ async function searchRepo(query: string): Promise<{ owner: string; name: string 
     if (!res.ok) return null;
     const data = (await res.json()) as any;
     const item = data.items?.[0];
-    if (!item) return null;
-    return { owner: item.owner?.login, name: item.name };
+    const owner = item?.owner?.login;
+    const name = item?.name;
+    if (typeof owner !== 'string' || typeof name !== 'string') return null;
+    return { owner, name };
   } catch {
     return null;
   }

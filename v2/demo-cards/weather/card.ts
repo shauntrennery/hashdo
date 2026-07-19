@@ -1,4 +1,4 @@
-import { defineCard, gradients } from '@hashdo/core';
+import { defineCard, gradients, escapeHtml } from '@hashdo/core';
 
 /**
  * #do/weather — Current weather conditions.
@@ -192,7 +192,7 @@ export default defineCard({
                 background:${gradients.purple};
                 border-radius:12px; color:white;">
       <div style="font-size:14px; opacity:0.9; margin-bottom:4px;">
-        ${vm.locationName}
+        ${escapeHtml(vm.locationName)}
       </div>
       <div style="display:flex; align-items:center; gap:12px; margin:12px 0;">
         <span style="font-size:48px;">${vm.icon}</span>
@@ -201,7 +201,7 @@ export default defineCard({
           <div style="font-size:13px; opacity:0.85;">Feels like ${vm.feelsLike}${vm.unitSymbol}</div>
         </div>
       </div>
-      <div style="font-size:14px; margin-bottom:12px;">${vm.condition}</div>
+      <div style="font-size:14px; margin-bottom:12px;">${escapeHtml(vm.condition)}</div>
       ${vm.high !== null ? `<div style="font-size:13px; opacity:0.85; margin-bottom:8px;">H: ${vm.high}${vm.unitSymbol}  L: ${vm.low}${vm.unitSymbol}</div>` : ''}
       <div style="display:flex; gap:16px; font-size:13px; opacity:0.85; flex-wrap:wrap;">
         <span>💧 ${vm.humidity}%</span>

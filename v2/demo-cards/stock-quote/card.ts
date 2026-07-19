@@ -1,4 +1,4 @@
-import { defineCard, colors } from '@hashdo/core';
+import { defineCard, colors, escapeHtml } from '@hashdo/core';
 
 const marketStateLabels: Record<string, string> = {
   REGULAR: 'Market Open',
@@ -15,6 +15,10 @@ export default defineCard({
 
   annotations: { readOnlyHint: false, openWorldHint: true, destructiveHint: false },
   shareable: true,
+
+  // Scope the watchlist/alerts to the viewer, not to the looked-up symbol, so
+  // the list follows the user across symbols and never leaks to other users.
+  stateKey: (_inputs, userId) => (userId ? `user:${userId}` : undefined),
 
   inputs: {
     symbol: {
@@ -158,8 +162,8 @@ export default defineCard({
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
           <div style="width:40px; height:40px; border-radius:10px; background:${vm.isPositive ? colors.green[50] : colors.red[50]}; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:${vm.color};">${(vm.symbol as string).charAt(0)}</div>
           <div>
-            <div style="font-size:16px; font-weight:700; color:#111; letter-spacing:-0.01em;">${vm.symbol}</div>
-            <div style="font-size:12px; color:#999; font-weight:400;">${vm.name}</div>
+            <div style="font-size:16px; font-weight:700; color:#111; letter-spacing:-0.01em;">${escapeHtml(vm.symbol)}</div>
+            <div style="font-size:12px; color:#999; font-weight:400;">${escapeHtml(vm.name)}</div>
           </div>
           <div style="margin-left:auto; padding:4px 10px; border-radius:20px; background:${vm.isPositive ? colors.green[50] : colors.red[50]}; color:${vm.color}; font-size:12px; font-weight:600;">${vm.arrow} ${vm.changePercent}%</div>
         </div>
@@ -172,8 +176,8 @@ export default defineCard({
         </div>
       </div>
       <div style="padding:12px 24px; background:#fafafa; border-top:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:11px; color:#bbb; font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">${vm.exchange}</span>
-        <span style="font-size:11px; color:#bbb;">${vm.marketLabel}</span>
+        <span style="font-size:11px; color:#bbb; font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">${escapeHtml(vm.exchange)}</span>
+        <span style="font-size:11px; color:#bbb;">${escapeHtml(vm.marketLabel)}</span>
       </div>
     </div>
   `,

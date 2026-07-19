@@ -12,10 +12,30 @@ export function prepareInputs<S extends InputSchema>(
   card: CardDefinition<S>,
   inputs: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (card.uniqueInstance && 'id' in card.inputs && !inputs.id) {
+  // Treat only null/undefined/'' as "no id"; a legitimate falsy id such as 0
+  // must not be overwritten with a fresh random one.
+  const hasId = inputs.id !== undefined && inputs.id !== null && inputs.id !== '';
+  if (card.uniqueInstance && 'id' in card.inputs && !hasId) {
     return { ...inputs, id: randomBytes(3).toString('hex') };
   }
   return inputs;
+}
+
+/**
+ * Canonicalize input values into a deterministic string.
+ *
+ * Uses a sorted-key JSON object rather than `k=v&...` concatenation so that
+ * values containing `&`/`=`, object/array values, and distinct inputs cannot
+ * collide onto the same serialization. `undefined`-valued keys are dropped so
+ * that `{a:'x', b:undefined}` and `{a:'x'}` — semantically identical calls —
+ * canonicalize identically.
+ */
+function canonicalizeInputs(obj: Record<string, unknown>): string {
+  const canonical: Record<string, unknown> = {};
+  for (const key of Object.keys(obj).sort()) {
+    if (obj[key] !== undefined) canonical[key] = obj[key];
+  }
+  return JSON.stringify(canonical);
 }
 
 /**
@@ -23,11 +43,7 @@ export function prepareInputs<S extends InputSchema>(
  * Deterministic: same inputs always produce the same key.
  */
 export function stableKey(obj: Record<string, unknown>): string {
-  const sorted = Object.keys(obj)
-    .sort()
-    .map((k) => `${k}=${obj[k]}`)
-    .join('&');
-  return Buffer.from(sorted).toString('base64url');
+  return Buffer.from(canonicalizeInputs(obj)).toString('base64url');
 }
 
 /**
@@ -51,12 +67,13 @@ export function computeInstanceId<S extends InputSchema>(
     }
   }
 
-  // Fallback: 6-char hex hash of sorted inputs
-  const sorted = Object.keys(inputs as Record<string, unknown>)
-    .sort()
-    .map((k) => `${k}=${(inputs as Record<string, unknown>)[k]}`)
-    .join('&');
-  return createHash('sha256').update(sorted).digest('hex').slice(0, 6);
+  // Fallback: 8-char hex hash of canonicalized inputs. 8 hex chars (32 bits)
+  // keeps IDs short/URL-safe while pushing the birthday-collision point out to
+  // ~90k instances per card, well above the shared-state use cases here.
+  return createHash('sha256')
+    .update(canonicalizeInputs(inputs as Record<string, unknown>))
+    .digest('hex')
+    .slice(0, 8);
 }
 
 /**

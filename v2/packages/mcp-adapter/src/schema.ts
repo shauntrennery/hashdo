@@ -43,21 +43,26 @@ function inputDefToZod(def: InputDefinition): z.ZodTypeAny {
 
   if (def.enum && def.enum.length > 0) {
     const literals = def.enum.map((v) => z.literal(v as string | number | boolean));
-    schema = z.union([literals[0], literals[1] ?? literals[0], ...literals.slice(2)]);
+    schema =
+      literals.length === 1
+        ? literals[0]
+        : z.union([literals[0], literals[1], ...literals.slice(2)]);
   }
 
-  // Add description
+  // Add description, noting the default so the model can still see it. We do
+  // NOT attach `.default()` below: the SDK would materialize it into the parsed
+  // params before the handler runs, so defaults would be applied on the MCP
+  // path but not the REST path, splitting instance identity/state for any card
+  // with a defaulted optional input. defineCard() applies defaults in exactly
+  // one place instead.
   if (def.description) {
-    schema = schema.describe(def.description);
+    const suffix = def.default !== undefined ? ` (default: ${JSON.stringify(def.default)})` : '';
+    schema = schema.describe(`${def.description}${suffix}`);
   }
 
-  // Make optional if not required (with default if provided)
+  // Make optional if not required. Defaults are intentionally not applied here.
   if (!def.required) {
-    if (def.default !== undefined) {
-      schema = schema.optional().default(def.default as any);
-    } else {
-      schema = schema.optional();
-    }
+    schema = schema.optional();
   }
 
   return schema;

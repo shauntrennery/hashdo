@@ -1,4 +1,4 @@
-import { defineCard, colors } from '@hashdo/core';
+import { defineCard, colors, escapeHtml } from '@hashdo/core';
 
 /**
  * #do/define — Dictionary word lookup card.
@@ -182,24 +182,24 @@ export default defineCard({
         `<div style="margin-bottom:10px;">
           <div style="font-size:14px; color:#1f2937; line-height:1.5;">
             <span style="color:#9ca3af; font-weight:600; margin-right:6px;">${i + 1}.</span>
-            ${d.definition}
+            ${escapeHtml(d.definition)}
           </div>
-          ${d.example ? `<div style="font-size:13px; color:#6b7280; font-style:italic; margin:4px 0 0 18px; padding-left:10px; border-left:2px solid #e5e7eb;">"${d.example}"</div>` : ''}
+          ${d.example ? `<div style="font-size:13px; color:#6b7280; font-style:italic; margin:4px 0 0 18px; padding-left:10px; border-left:2px solid #e5e7eb;">"${escapeHtml(d.example)}"</div>` : ''}
         </div>`
       ).join('');
 
       const synRow = m.synonyms.length > 0
-        ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${m.synonyms.map((s: string) => `<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:${colors.green[50]}; color:${colors.green[800]}; border:1px solid ${colors.green[100]};">${s}</span>`).join('')}</div>`
+        ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${m.synonyms.map((s: string) => `<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:${colors.green[50]}; color:${colors.green[800]}; border:1px solid ${colors.green[100]};">${escapeHtml(s)}</span>`).join('')}</div>`
         : '';
 
       const antRow = m.antonyms.length > 0
-        ? `<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">${m.antonyms.map((a: string) => `<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:${colors.red[50]}; color:${colors.red[800]}; border:1px solid ${colors.red[100]};">${a}</span>`).join('')}</div>`
+        ? `<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">${m.antonyms.map((a: string) => `<span style="padding:2px 8px; border-radius:12px; font-size:11px; background:${colors.red[50]}; color:${colors.red[800]}; border:1px solid ${colors.red[100]};">${escapeHtml(a)}</span>`).join('')}</div>`
         : '';
 
       return `
         <div style="margin-bottom:16px;">
           <div style="display:inline-block; padding:3px 10px; border-radius:6px; font-size:12px; font-weight:600; font-style:italic; background:${posColor(m.partOfSpeech)}20; color:${posColor(m.partOfSpeech)};">
-            ${m.partOfSpeech}
+            ${escapeHtml(m.partOfSpeech)}
           </div>
           <div style="margin-top:10px;">${defs}</div>
           ${synRow}
@@ -214,9 +214,9 @@ export default defineCard({
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
               <div style="font-size:28px; font-weight:700; color:#fff; letter-spacing:-0.02em;">
-                ${vm.word}
+                ${escapeHtml(vm.word)}
               </div>
-              ${vm.phonetic ? `<div style="font-size:15px; color:rgba(255,255,255,0.85); margin-top:4px; font-style:italic;">${vm.phonetic}</div>` : ''}
+              ${vm.phonetic ? `<div style="font-size:15px; color:rgba(255,255,255,0.85); margin-top:4px; font-style:italic;">${escapeHtml(vm.phonetic)}</div>` : ''}
             </div>
             ${vm.isSaved ? `
             <span style="padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; background:rgba(255,255,255,0.2); color:#fff;">

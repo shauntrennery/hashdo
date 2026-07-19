@@ -14,7 +14,7 @@ import { randomUUID } from 'node:crypto';
 import { readdir, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { createServer } from 'node:http';
-import { type CardDefinition, type StateStore, renderCard, resolveInstance, prepareInputs } from '@hashdo/core';
+import { type CardDefinition, type StateStore, renderCard, resolveInstance, prepareInputs, escapeHtml } from '@hashdo/core';
 import { serveMcp, handleMcpRequest } from '@hashdo/mcp-adapter';
 import { warmupBrowser, renderHtmlToImage } from '@hashdo/screenshot';
 import { generateOpenApiSpec } from './openapi.js';
@@ -24,6 +24,11 @@ import { createStateStore } from './create-state-store.js';
 // In-memory image cache (avoids repeated Puppeteer renders for social crawlers)
 // ---------------------------------------------------------------------------
 const IMAGE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// Hard cap so a crawler/attacker requesting many distinct instanceIds cannot
+// grow the cache without bound. The cache key is partly attacker-controlled
+// (the URL instanceId), and expired entries for never-repeated keys are never
+// otherwise swept, so we also evict the oldest entry when over capacity.
+const IMAGE_CACHE_MAX_ENTRIES = 200;
 const imageCache = new Map<string, { buffer: Buffer; expiresAt: number }>();
 
 function getCachedImage(key: string): Buffer | undefined {
@@ -37,7 +42,14 @@ function getCachedImage(key: string): Buffer | undefined {
 }
 
 function setCachedImage(key: string, buffer: Buffer): void {
+  // Refresh position (Map preserves insertion order → oldest is first).
+  imageCache.delete(key);
   imageCache.set(key, { buffer, expiresAt: Date.now() + IMAGE_CACHE_TTL_MS });
+  while (imageCache.size > IMAGE_CACHE_MAX_ENTRIES) {
+    const oldest = imageCache.keys().next().value;
+    if (oldest === undefined) break;
+    imageCache.delete(oldest);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -45,18 +57,26 @@ function setCachedImage(key: string, buffer: Buffer): void {
 // ---------------------------------------------------------------------------
 const COOKIE_NAME = 'hd_uid';
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1 year in seconds
+// Set the Secure attribute when the deployment is served over HTTPS (Railway),
+// but not for local http:// dev where the browser would then drop the cookie.
+const COOKIE_SECURE = (process.env.BASE_URL ?? '').startsWith('https');
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Read user ID from cookie, or generate a new one. Returns [userId, needsSet]. */
 function resolveUserId(req: import('node:http').IncomingMessage): [string, boolean] {
   const cookieHeader = req.headers.cookie ?? '';
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`));
-  if (match) return [match[1], false];
+  // Only accept a well-formed UUID; anything else is treated as absent and a
+  // fresh id is issued. This prevents an attacker-supplied cookie value (e.g.
+  // one containing ':' or a newline) from being injected into state-store keys.
+  if (match && UUID_RE.test(match[1])) return [match[1], false];
   return [randomUUID(), true];
 }
 
 /** Build the Set-Cookie header value. */
 function makeSetCookie(userId: string): string {
-  return `${COOKIE_NAME}=${userId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}`;
+  const secure = COOKIE_SECURE ? '; Secure' : '';
+  return `${COOKIE_NAME}=${userId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${secure}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -495,12 +515,28 @@ async function cmdPreview() {
   });
 }
 
+/** Maximum accepted JSON request body size (bytes). Bounds memory per request. */
+const MAX_JSON_BODY_BYTES = 256 * 1024;
+
 /** Read and parse a JSON request body. Returns {} for empty bodies. */
 function readJsonBody(req: import('node:http').IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    let size = 0;
+    let tooLarge = false;
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+      // Once over the cap, stop buffering (bounding memory) but keep draining
+      // the stream so the route can still send a clean 4xx response rather than
+      // resetting the connection.
+      if (size > MAX_JSON_BODY_BYTES) {
+        tooLarge = true;
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on('end', () => {
+      if (tooLarge) { reject(new Error('Request body too large')); return; }
       const raw = Buffer.concat(chunks).toString('utf-8');
       if (!raw || raw.trim() === '') { resolve({}); return; }
       try {
@@ -522,6 +558,45 @@ function parseInputsFromParams(searchParams: URLSearchParams): Record<string, un
     else inputs[key] = value;
   }
   return inputs;
+}
+
+/** Collect query params as raw strings (schema-based coercion happens later). */
+function rawParams(searchParams: URLSearchParams): Record<string, unknown> {
+  const inputs: Record<string, unknown> = {};
+  for (const [key, value] of searchParams) inputs[key] = value;
+  return inputs;
+}
+
+/**
+ * Restrict a raw input object to the card's declared inputs and coerce string
+ * values (from query params) to their declared type. Undeclared keys — including
+ * reserved cache-busters like `_t` — are dropped so they cannot perturb instance
+ * identity/state keys or get persisted as share inputs. Values that arrive
+ * already-typed (from a JSON body) pass through unchanged.
+ */
+function coerceDeclaredInputs(
+  card: CardDefinition,
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, def] of Object.entries(card.inputs)) {
+    if (!(key in raw)) continue;
+    const value = raw[key];
+    if (value === undefined || value === null) continue;
+    if (typeof value === 'string') {
+      if (def.type === 'number') {
+        const n = Number(value);
+        out[key] = value.trim() !== '' && Number.isFinite(n) ? n : value;
+      } else if (def.type === 'boolean') {
+        out[key] = value === 'true' ? true : value === 'false' ? false : value;
+      } else {
+        out[key] = value;
+      }
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
 }
 
 /**
@@ -555,7 +630,11 @@ async function renderCardWithState(
   baseUrl?: string,
   userId?: string,
 ) {
-  const prepared = prepareInputs(card, inputs);
+  // Drop undeclared keys (e.g. the `_t` cache-buster) and coerce by schema so
+  // that instance identity, state keys, and stored share inputs derive only
+  // from the card's real inputs.
+  const declared = coerceDeclaredInputs(card, inputs);
+  const prepared = prepareInputs(card, declared);
   const { instanceId, cardKey } = resolveInstance(card, prepared as any, userId);
 
   const state = (await store.get(cardKey)) ?? {};
@@ -615,9 +694,16 @@ async function cmdStart() {
   };
 
   const server = createServer(async (req, res) => {
+   try {
     const url = new URL(req.url || '/', `http://localhost:${port}`);
     const [userId, needsSetCookie] = resolveUserId(req);
     const cookieHeader = needsSetCookie ? { 'Set-Cookie': makeSetCookie(userId) } : {};
+
+    // Baseline security headers applied to every response. These two are safe
+    // for the iframe-embedded card/share pages and the inline scripts the pages
+    // rely on; a full CSP would need per-page nonces and is tracked separately.
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
     // OpenAI domain verification
     if (url.pathname === '/.well-known/openai-apps-challenge' && req.method === 'GET') {
@@ -715,7 +801,7 @@ async function cmdStart() {
       }
       try {
         trackCardUsage(entry.card.name);
-        const inputs = parseInputsFromParams(url.searchParams);
+        const inputs = rawParams(url.searchParams);
         const result = await renderCardWithState(entry.card, inputs, stateStore, entry.dir, mcpOptions.baseUrl, userId);
         const imageBuffer = await renderHtmlToImage(result.html);
         if (!imageBuffer) {
@@ -879,24 +965,14 @@ async function cmdStart() {
       return;
     }
 
-    // Editor API: test card execution
+    // Editor API: test card execution.
+    // SECURITY: this endpoint eval()s caller-supplied code in the server
+    // process. That is acceptable only on the local `preview` dev server, never
+    // on the public production server, so it is disabled here. See cmdPreview
+    // for the enabled version used during local card development.
     if (url.pathname === '/api/editor/test' && req.method === 'POST') {
-      const editorCors: Record<string, string> = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      };
-      try {
-        const body = await readJsonBody(req);
-        const code = body.code as string;
-        const testInputs = (body.inputs ?? {}) as Record<string, unknown>;
-        const result = await executeEditorCard(code, testInputs);
-        res.writeHead(200, { ...editorCors, 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(result));
-      } catch (err: any) {
-        res.writeHead(200, { ...editorCors, 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message }));
-      }
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'The card test harness is only available on the local preview server.' }));
       return;
     }
 
@@ -1008,6 +1084,18 @@ async function cmdStart() {
 
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not found');
+   } catch (err) {
+      // Backstop: any error thrown before a route wrote its response (malformed
+      // request URL, bad percent-encoding, a transient state-store failure)
+      // becomes a 500 instead of an unhandled rejection that crashes the process.
+      console.error('[hashdo] Unhandled request error:', err);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Internal Server Error');
+      } else {
+        try { res.end(); } catch { /* response already closed */ }
+      }
+    }
   });
 
   server.listen(port, () => {
@@ -1284,10 +1372,10 @@ function renderPreviewPage(
             : 'text';
       return `
       <div class="field">
-        <label>${name}${def.required ? ' *' : ''}</label>
-        <input type="${inputType}" name="${name}" value="${value}"
-               placeholder="${def.description}" />
-        <span class="desc">${def.description}</span>
+        <label>${escapeHtml(name)}${def.required ? ' *' : ''}</label>
+        <input type="${inputType}" name="${escapeHtml(name)}" value="${escapeHtml(value)}"
+               placeholder="${escapeHtml(def.description)}" />
+        <span class="desc">${escapeHtml(def.description)}</span>
       </div>`;
     })
     .join('\n');
@@ -1301,17 +1389,18 @@ function renderPreviewPage(
       .join('&');
     const imageUrl = `${baseUrl}/api/cards/${encodeURIComponent(card.name)}/image${queryParts ? '?' + queryParts : ''}`;
     const cardUrl = `${baseUrl}/card/${encodeURIComponent(card.name)}${queryParts ? '?' + queryParts : ''}`;
-    const description = card.description || `Interactive ${card.name} card on HashDo`;
+    const description = escapeHtml(card.description || `Interactive ${card.name} card on HashDo`);
+    const safeName = escapeHtml(card.name);
     ogTags = `
   <meta property="og:type" content="website">
-  <meta property="og:title" content="${card.name} — HashDo">
+  <meta property="og:title" content="${safeName} — HashDo">
   <meta property="og:description" content="${description}">
-  <meta property="og:image" content="${imageUrl}">
-  <meta property="og:url" content="${cardUrl}">
+  <meta property="og:image" content="${escapeHtml(imageUrl)}">
+  <meta property="og:url" content="${escapeHtml(cardUrl)}">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${card.name} — HashDo">
+  <meta name="twitter:title" content="${safeName} — HashDo">
   <meta name="twitter:description" content="${description}">
-  <meta name="twitter:image" content="${imageUrl}">`;
+  <meta name="twitter:image" content="${escapeHtml(imageUrl)}">`;
   }
 
   return `<!DOCTYPE html>
@@ -1319,7 +1408,7 @@ function renderPreviewPage(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${card.name} — HashDo Preview</title>
+  <title>${escapeHtml(card.name)} — HashDo Preview</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">${ogTags}
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1352,9 +1441,9 @@ function renderPreviewPage(
     <div class="inputs-section">
       <a href="/" class="back">&larr; All Cards</a>
       <div class="panel">
-        <h1>${card.name}</h1>
-        <p style="color:#666; font-size:13px; margin-bottom:20px;">${card.description}</p>
-        <form method="GET" action="/card/${card.name}">
+        <h1>${escapeHtml(card.name)}</h1>
+        <p style="color:#666; font-size:13px; margin-bottom:20px;">${escapeHtml(card.description)}</p>
+        <form method="GET" action="/card/${encodeURIComponent(card.name)}">
           ${inputFields}
           <button type="submit" class="render-btn">Render Card</button>
         </form>

@@ -6,6 +6,8 @@
  * inside any HashDo card template.
  */
 
+import { jsonForScript, safeHttpUrl } from './html.js';
+
 export interface GalleryImage {
   id: string;
   src: string;
@@ -115,10 +117,23 @@ export function galleryHtml(config: GalleryConfig): string {
       <div id="${uid}_lbmeta" style="text-align:center;margin-top:12px;max-width:600px;"></div>
     </div>`;
 
+  // Pre-escape every meta field on the server side so the lightbox can assign
+  // it via innerHTML without turning API-sourced strings (titles, captions,
+  // source labels) into live markup. Source URLs are restricted to http(s).
+  const lightboxData = images.map((i) => ({
+    src: i.src,
+    alt: i.alt,
+    title: i.title ? esc(i.title) : undefined,
+    caption: i.caption ? esc(i.caption) : undefined,
+    source: i.source
+      ? { label: esc(i.source.label), url: i.source.url ? safeHttpUrl(i.source.url) : undefined }
+      : undefined,
+  }));
+
   const script = `
     <script>
     (function(){
-      var imgs = ${JSON.stringify(images.map(i => ({ src: i.src, alt: i.alt, title: i.title, caption: i.caption, source: i.source })))};
+      var imgs = ${jsonForScript(lightboxData)};
       var idx = 0;
       var lb = document.getElementById('${uid}_lb');
       var lbImg = document.getElementById('${uid}_lbimg');
