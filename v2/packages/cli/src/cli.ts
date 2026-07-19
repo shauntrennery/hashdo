@@ -88,7 +88,25 @@ function sortCardsByUsage(cards: CardDefinition[]): CardDefinition[] {
 
 const args = process.argv.slice(2);
 const command = args[0] || 'serve';
-const targetDir = resolve(args[1] || '.');
+
+function portFlag(): string | undefined {
+  const eqForm = args.find((a) => a.startsWith('--port='));
+  if (eqForm) return eqForm.split('=')[1];
+  const flagIndex = args.indexOf('--port');
+  return flagIndex !== -1 ? args[flagIndex + 1] : undefined;
+}
+
+const positionals: string[] = [];
+for (let i = 1; i < args.length; i++) {
+  const arg = args[i]!;
+  if (arg === '--port') {
+    i++; // skip the flag's value
+    continue;
+  }
+  if (arg.startsWith('--')) continue;
+  positionals.push(arg);
+}
+const targetDir = resolve(positionals[0] || '.');
 
 async function main() {
   switch (command) {
@@ -225,10 +243,7 @@ async function cmdServe() {
 }
 
 async function cmdPreview() {
-  const port = parseInt(
-    args.find((a) => a.startsWith('--port='))?.split('=')[1] ?? '3000',
-    10
-  );
+  const port = parseInt(portFlag() ?? process.env.PORT ?? '3000', 10);
 
   // Initial discovery to validate the directory
   const initial = await discoverCards(targetDir);
@@ -558,12 +573,7 @@ async function renderCardWithState(
 }
 
 async function cmdStart() {
-  const port = parseInt(
-    process.env.PORT ??
-      args.find((a) => a.startsWith('--port='))?.split('=')[1] ??
-      '3000',
-    10
-  );
+  const port = parseInt(portFlag() ?? process.env.PORT ?? '3000', 10);
 
   const discovered = await discoverCards(targetDir);
 

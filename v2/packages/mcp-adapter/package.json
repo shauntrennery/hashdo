@@ -22,7 +22,7 @@
     "@hashdo/screenshot": "2.0.0-alpha.1",
     "@modelcontextprotocol/ext-apps": "1.0.1",
     "@modelcontextprotocol/sdk": "1.26.0",
-    "zod": "4.3.6"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "25.5.0",
