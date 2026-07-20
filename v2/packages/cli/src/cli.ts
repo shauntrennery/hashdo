@@ -14,7 +14,8 @@ import { randomUUID } from 'node:crypto';
 import { readdir, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { createServer } from 'node:http';
-import { type CardDefinition, type StateStore, renderCard, resolveInstance, prepareInputs, escapeHtml } from '@hashdo/core';
+import { type CardDefinition, type StateStore, renderCard, resolveInstance, prepareInputs, escapeHtml, stableKey } from '@hashdo/core';
+import { createRateLimiter, createSemaphore, QueueFullError } from './throttle.js';
 import { serveMcp, handleMcpRequest } from '@hashdo/mcp-adapter';
 import { warmupBrowser, renderHtmlToImage } from '@hashdo/screenshot';
 import { generateOpenApiSpec } from './openapi.js';
@@ -50,6 +51,49 @@ function setCachedImage(key: string, buffer: Buffer): void {
     if (oldest === undefined) break;
     imageCache.delete(oldest);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Image endpoint throttling
+// ---------------------------------------------------------------------------
+// Each cache miss costs an external fetch plus a headless-Chromium render, so
+// the image routes are bounded twice: a per-IP request budget, and a global cap
+// on simultaneous renders with a short queue that sheds load instead of piling
+// work onto an already-saturated container.
+const IMAGE_RATE_LIMIT = Number(process.env['HASHDO_IMAGE_RATE_LIMIT'] ?? 30);
+const IMAGE_RATE_WINDOW_MS = Number(process.env['HASHDO_IMAGE_RATE_WINDOW_MS'] ?? 60_000);
+const IMAGE_RENDER_CONCURRENCY = Number(process.env['HASHDO_RENDER_CONCURRENCY'] ?? 2);
+const IMAGE_RENDER_QUEUE = Number(process.env['HASHDO_RENDER_QUEUE'] ?? 16);
+
+const imageRateLimiter = createRateLimiter({
+  limit: IMAGE_RATE_LIMIT,
+  windowMs: IMAGE_RATE_WINDOW_MS,
+});
+const imageRenderQueue = createSemaphore({
+  concurrency: IMAGE_RENDER_CONCURRENCY,
+  maxQueue: IMAGE_RENDER_QUEUE,
+});
+
+/**
+ * Best-effort client IP for rate limiting. Behind Cloudflare/Railway the socket
+ * address is the proxy, so prefer the proxy-set headers. These are spoofable by
+ * a direct-to-origin caller, so this is a cost control, not an auth boundary.
+ */
+function clientIp(req: import('node:http').IncomingMessage): string {
+  const cf = req.headers['cf-connecting-ip'];
+  if (typeof cf === 'string' && cf) return cf;
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff) return xff.split(',')[0]!.trim();
+  return req.socket.remoteAddress ?? 'unknown';
+}
+
+/** Send the standard 429 for a rate-limited image request. */
+function sendRateLimited(res: import('node:http').ServerResponse): void {
+  res.writeHead(429, {
+    'Content-Type': 'text/plain',
+    'Retry-After': String(Math.ceil(IMAGE_RATE_WINDOW_MS / 1000)),
+  });
+  res.end('Too many image requests — please retry shortly.');
 }
 
 // ---------------------------------------------------------------------------
@@ -799,16 +843,43 @@ async function cmdStart() {
         res.end(JSON.stringify({ error: `Card not found: ${imageMatch[1]}` }));
         return;
       }
+      // Card images are public artifacts (OG/social previews, crawlers), so
+      // they are rendered user-independently: no viewer's per-user state may
+      // leak into an image served to everyone. That also makes the cache key
+      // — card + declared inputs — correct without a userId component.
+      const inputs = coerceDeclaredInputs(entry.card, rawParams(url.searchParams));
+      const cacheKey = `api:${entry.card.name}:${stableKey(inputs)}`;
+      const cached = getCachedImage(cacheKey);
+      if (cached) {
+        res.writeHead(200, {
+          ...corsHeaders,
+          'Content-Type': 'image/png',
+          'Content-Length': String(cached.length),
+          'Cache-Control': 'public, max-age=60',
+        });
+        res.end(cached);
+        return;
+      }
+
+      // Budget is spent only on cache misses — the expensive path. Cached
+      // responses are cheap and always served (matches the share-image route).
+      if (!imageRateLimiter.check(clientIp(req))) {
+        sendRateLimited(res);
+        return;
+      }
+
       try {
         trackCardUsage(entry.card.name);
-        const inputs = rawParams(url.searchParams);
-        const result = await renderCardWithState(entry.card, inputs, stateStore, entry.dir, mcpOptions.baseUrl, userId);
-        const imageBuffer = await renderHtmlToImage(result.html);
+        const imageBuffer = await imageRenderQueue.run(async () => {
+          const result = await renderCardWithState(entry.card, inputs, stateStore, entry.dir, mcpOptions.baseUrl, undefined);
+          return renderHtmlToImage(result.html);
+        });
         if (!imageBuffer) {
           res.writeHead(503, { ...corsHeaders, 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Screenshot renderer unavailable' }));
           return;
         }
+        setCachedImage(cacheKey, imageBuffer);
         res.writeHead(200, {
           ...corsHeaders,
           'Content-Type': 'image/png',
@@ -817,6 +888,11 @@ async function cmdStart() {
         });
         res.end(imageBuffer);
       } catch (err: any) {
+        if (err instanceof QueueFullError) {
+          res.writeHead(503, { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '5' });
+          res.end(JSON.stringify({ error: 'Renderer busy — please retry shortly.' }));
+          return;
+        }
         res.writeHead(500, { ...corsHeaders, 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
       }
@@ -1005,10 +1081,19 @@ async function cmdStart() {
         res.end(cached);
         return;
       }
+      if (!imageRateLimiter.check(clientIp(req))) {
+        sendRateLimited(res);
+        return;
+      }
       const inputs = await resolveShareInputs(entry.card, instanceId, stateStore);
       try {
-        const result = await renderCardWithState(entry.card, inputs, stateStore, entry.dir, mcpOptions.baseUrl, userId);
-        const imageBuffer = await renderHtmlToImage(result.html);
+        // Rendered user-independently: this image is cached under a key with no
+        // userId and served to every viewer of the share URL, so it must never
+        // contain the first requester's per-user state.
+        const imageBuffer = await imageRenderQueue.run(async () => {
+          const result = await renderCardWithState(entry.card, inputs, stateStore, entry.dir, mcpOptions.baseUrl, undefined);
+          return renderHtmlToImage(result.html);
+        });
         if (!imageBuffer) {
           res.writeHead(503, { 'Content-Type': 'text/plain' });
           res.end('Screenshot renderer unavailable');
@@ -1022,6 +1107,11 @@ async function cmdStart() {
         });
         res.end(imageBuffer);
       } catch (err: any) {
+        if (err instanceof QueueFullError) {
+          res.writeHead(503, { 'Content-Type': 'text/plain', 'Retry-After': '5' });
+          res.end('Renderer busy — please retry shortly.');
+          return;
+        }
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end(`Error rendering shared card image: ${err.message}`);
       }
@@ -1098,8 +1188,21 @@ async function cmdStart() {
     }
   });
 
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`[hashdo] Port ${port} is already in use — is another instance running?`);
+    } else {
+      console.error(`[hashdo] Server error: ${err.message}`);
+    }
+    process.exit(1);
+  });
+
   server.listen(port, () => {
     console.log(`[hashdo] Production server running at http://localhost:${port}`);
+    console.log(
+      `[hashdo] Image throttle: ${IMAGE_RATE_LIMIT} req/${Math.round(IMAGE_RATE_WINDOW_MS / 1000)}s per IP, ` +
+      `${IMAGE_RENDER_CONCURRENCY} concurrent render(s), queue ${IMAGE_RENDER_QUEUE}`
+    );
     console.log(`[hashdo] MCP endpoint: http://localhost:${port}/mcp`);
     console.log(`[hashdo] REST API: http://localhost:${port}/api/cards`);
     console.log(`[hashdo] OpenAPI spec: http://localhost:${port}/api/openapi.json`);
